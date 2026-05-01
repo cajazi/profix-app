@@ -1,4 +1,4 @@
-﻿import { supabase } from "./supabase.js"
+import { supabase } from "./supabase.js"
 
 const app = document.getElementById("app")
 let currentEmail = ""
@@ -65,7 +65,7 @@ function navBar(title) {
 }
 /* OPAY_THEME_APPLIED */
 
-// â”€â”€ THEME SYSTEM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── THEME SYSTEM ─────────────────────────────────────────────────────────────
 let _themeMediaQuery = null
 
 function applyTheme(mode) {
@@ -94,20 +94,20 @@ function _applySystemTheme() {
 
 function _onSystemThemeChange() { _applySystemTheme() }
 
-const _themeLabels = { light: 'â˜€ï¸ Light', dark: 'ðŸŒ™ Dark', system: 'ðŸ”„ Auto' }
+const _themeLabels = { light: '☀️ Light', dark: '🌙 Dark', system: '🔄 Auto' }
 const _themeCycle  = ['light', 'dark', 'system']
 
 function initTheme() {
   const saved = localStorage.getItem('profix_theme') || 'system'
   applyTheme(saved)
 }
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
 function showLoading() {
   app.innerHTML = "<div style='min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg-page);'><div style='text-align:center;'><div style='width:52px;height:52px;border:4px solid #33CE7A;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;'></div><p style='color:var(--text-secondary);font-size:14px;margin:0;'>Loading ProFix...</p></div></div>"
 }
 
-// â”€â”€ DEVICE + PIN HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── DEVICE + PIN HELPERS ──────────────────────────────────────────────────────
 
 function calculateCommission(amount) {
   const amt = Number(amount)
@@ -152,7 +152,7 @@ async function trustDevice(userId) {
   }
 }
 
-// â”€â”€ LOGIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
 function showLogin() {
   backStack = []; isGoingBack = false
   pushScreen("login", showLogin)
@@ -208,7 +208,7 @@ function showLogin() {
   })
 }
 
-// â”€â”€ OTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── OTP ───────────────────────────────────────────────────────────────────────
 function showOTP(mode) {
   pushScreen("otp", () => showOTP(mode))
   app.innerHTML =
@@ -256,7 +256,7 @@ function showOTP(mode) {
   })
 }
 
-// â”€â”€ CREATE PIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CREATE PIN ────────────────────────────────────────────────────────────────
 function showCreatePin(user) {
   pushScreen("createPin", () => showCreatePin(user))
   let pin1 = "", step = 1
@@ -268,8 +268,8 @@ function showCreatePin(user) {
         "<p id='pinSub' style='color:var(--text-secondary);font-size:14px;margin:0;'>Protects your account on this device</p>" +
       "</div>" +
       "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
+      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Next</button>" +
     "</div></div>"
   const inp = document.getElementById("pinInput")
@@ -304,7 +304,7 @@ function showCreatePin(user) {
   })
 }
 
-// â”€â”€ VERIFY PIN (existing user, new device) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── VERIFY PIN (existing user, new device) ────────────────────────────────────
 function showVerifyPin(user, trustAfter) {
   pushScreen("verifyPin", () => showVerifyPin(user, trustAfter))
   let attempts = 0
@@ -316,8 +316,8 @@ function showVerifyPin(user, trustAfter) {
         "<p style='color:var(--text-secondary);font-size:14px;margin:0;'>" + (user?.email||currentEmail) + "</p>" +
       "</div>" +
       "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
+      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
       "<button id='forgotBtn' style='width:100%;margin-top:10px;padding:10px;background:none;color:var(--text-secondary);font-size:13px;border:none;cursor:pointer;'>Forgot PIN? Use email code</button>" +
     "</div></div>"
@@ -364,7 +364,7 @@ function showVerifyPin(user, trustAfter) {
   })
 }
 
-// â”€â”€ PIN LOGIN (trusted device) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PIN LOGIN (trusted device) ─────────────────────────────────────────────────
 async function showPinLogin(email, profileId) {
   pushScreen("pinLogin", () => showPinLogin(email, profileId))
   let attempts = 0
@@ -376,8 +376,8 @@ async function showPinLogin(email, profileId) {
         "<p style='color:var(--text-secondary);font-size:14px;margin:0;'>" + email + "</p>" +
       "</div>" +
       "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
+      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
       "<button id='otpBtn' style='width:100%;margin-top:10px;padding:10px;background:none;color:var(--text-secondary);font-size:13px;border:none;cursor:pointer;'>Use email code instead</button>" +
     "</div></div>"
@@ -591,7 +591,6 @@ function showDashboard(user) {
     const signOutBtn = document.getElementById("menuSignOutBtn")
     if (signOutBtn) signOutBtn.parentNode.insertBefore(adminBtn, signOutBtn)
   }
-  document.getElementById("menuSettingsBtn").addEventListener("click", () => { closeMenu(); showSettings(user) })
   document.getElementById("menuSignOutBtn").addEventListener("click", async () => {
     closeMenu(); sessionStorage.removeItem("profix_pin_ok"); currentEmail = ""; currentUser = null; showLogin()
   })
@@ -1068,7 +1067,7 @@ function renderProfileView(user, profile, container) {
         "<button id='startKycBtn' style='width:100%;padding:13px;background:var(--primary);color:#FFFFFF;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;min-height:46px;'>Verify Identity Now</button>" :
         "<div style='display:flex;align-items:center;gap:10px;background:rgba(0,194,89,0.07);border:1px solid rgba(0,194,89,0.2);border-radius:10px;padding:12px;'>" +
           "<span style='font-size:18px;'>&#128336;</span>" +
-          "<p style='color:var(--primary);font-size:13px;font-weight:600;margin:0;'>Documents submitted â€” under review</p>" +
+          "<p style='color:var(--primary);font-size:13px;font-weight:600;margin:0;'>Documents submitted — under review</p>" +
         "</div>"
       ) +
     "</div>" +
@@ -1472,7 +1471,7 @@ async function showCreateContract(user, room) {
     const errEl = document.getElementById("contractErr")
     errEl.style.display = "none"
     if (!price || price <= 0) { errEl.textContent = "Please enter the agreed price"; errEl.style.display = "block"; return }
-    if (price < 100) { errEl.textContent = "Minimum contract amount is â‚¦100"; errEl.style.display = "block"; return }
+    if (price < 100) { errEl.textContent = "Minimum contract amount is ₦100"; errEl.style.display = "block"; return }
     setBtn("createContractBtn", true, "Create Contract & Pay")
 
     const workerId = room.owner_id === user.id ? room.worker_id : room.owner_id
@@ -1547,7 +1546,7 @@ function showPayment(user, contract) {
 
     if (typeof PaystackPop === "undefined") {
       alert("Payment system not loaded. Check your internet connection.")
-      btn.disabled = false; btn.textContent = "Pay â‚¦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
+      btn.disabled = false; btn.textContent = "Pay ₦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
       return
     }
     try {
@@ -1555,12 +1554,12 @@ function showPayment(user, contract) {
         supabase.from("payments").update({ status: "paid", paid_at: new Date().toISOString() }).eq("paystack_ref", ref)
           .then(function() { return supabase.from("contracts").update({ status: "active", funded_at: new Date().toISOString() }).eq("id", contract.id) })
         .then(function() { return supabase.from("jobs").update({ status: "closed" }).eq("id", contract.job_id) })
-          .then(function() { return supabase.from("notifications").insert({ user_id: contract.worker_id, title: "Payment Received!", body: "â‚¦" + Number(contract.agreed_price).toLocaleString() + " received for " + contract.job_title, type: "payment", data: {} }) })
+          .then(function() { return supabase.from("notifications").insert({ user_id: contract.worker_id, title: "Payment Received!", body: "₦" + Number(contract.agreed_price).toLocaleString() + " received for " + contract.job_title, type: "payment", data: {} }) })
           .then(function() { showPaymentSuccess(user, contract) })
       }
       window.__pfClose = function() {
         btn.disabled = false
-        btn.textContent = "Pay â‚¦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
+        btn.textContent = "Pay ₦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
       }
       PaystackPop.setup({
         key: import.meta.env.VITE_PAYSTACK_KEY,
@@ -1574,7 +1573,7 @@ function showPayment(user, contract) {
     } catch(e) {
       console.error("Paystack error:", e)
       btn.disabled = false
-      btn.textContent = "Pay â‚¦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
+      btn.textContent = "Pay ₦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
     }
   })
 }
@@ -1674,11 +1673,11 @@ async function showContractDetail(user, contract) {
   const confirmBtn = document.getElementById("confirmBtn")
   if (confirmBtn) {
     confirmBtn.addEventListener("click", async () => {
-      if (!confirm("Confirm job is complete? This will release â‚¦" + Number(contract.agreed_price).toLocaleString() + " to the worker.")) return
+      if (!confirm("Confirm job is complete? This will release ₦" + Number(contract.agreed_price).toLocaleString() + " to the worker.")) return
       confirmBtn.disabled = true; confirmBtn.textContent = "Releasing payment..."
       await supabase.from("contracts").update({ status: "released", completed_at: new Date().toISOString(), released_at: new Date().toISOString() }).eq("id", contract.id)
       await creditWallet(contract.worker_id, contract.agreed_price, "Payment for " + contract.job_title, contract.id)
-      await supabase.from("notifications").insert({ user_id: contract.worker_id, title: "Payment Released!", body: "â‚¦" + Number(contract.agreed_price).toLocaleString() + " added to your wallet for " + contract.job_title, type: "payment_released", data: { contract_id: contract.id } })
+      await supabase.from("notifications").insert({ user_id: contract.worker_id, title: "Payment Released!", body: "₦" + Number(contract.agreed_price).toLocaleString() + " added to your wallet for " + contract.job_title, type: "payment_released", data: { contract_id: contract.id } })
       contract.status = "released"
       showContractDetail(user, contract)
     })
@@ -1732,7 +1731,7 @@ async function creditWallet(userId, amount, description, contractId) {
   return !error
 }
 
-// â”€â”€ WALLET & WITHDRAWALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── WALLET & WITHDRAWALS ──────────────────────────────────────────────────────
 
 async function showWallet(user) {
   pushScreen("wallet", () => showWallet(user))
@@ -1769,7 +1768,7 @@ async function showWallet(user) {
       "</button>" +
     "</div>" +
       (balance > 0
-      ? "<button id='withdrawBtn' style='background:#FFFFFF;color:#007A38;font-size:14px;font-weight:800;padding:12px 28px;border:none;border-radius:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);'>ðŸ’¸ Withdraw Funds</button>"
+      ? "<button id='withdrawBtn' style='background:#FFFFFF;color:#007A38;font-size:14px;font-weight:800;padding:12px 28px;border:none;border-radius:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);'>💸 Withdraw Funds</button>"
       : "<button id='withdrawBtn' style='background:rgba(255,255,255,0.20);color:#FFFFFF;font-size:14px;font-weight:700;padding:12px 28px;border:2px solid rgba(255,255,255,0.5);border-radius:10px;cursor:pointer;'>No funds yet</button>") +
     "</div>" +
 
@@ -1833,7 +1832,6 @@ async function showWallet(user) {
 
   container.innerHTML = html
 
-  // Eye toggle for wallet balance
   var toggleBalBtn = document.getElementById("toggleBalance")
   if (toggleBalBtn) {
     toggleBalBtn.addEventListener("click", function() {
@@ -1851,7 +1849,6 @@ async function showWallet(user) {
       }
     })
   }
-
   const withdrawBtn = document.getElementById("withdrawBtn")
   if (withdrawBtn) {
     withdrawBtn.addEventListener("click", () => {
@@ -1871,12 +1868,7 @@ function showWithdrawal(user, balance) {
       "<div style='background:var(--gradient-hero);border-radius:16px;padding:18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-green);'>" +
         "<div>" +
           "<p style='color:rgba(255,255,255,0.8);font-size:13px;margin:0 0 4px;'>Available Balance</p>" +
-          "<div style='display:flex;align-items:center;gap:10px;'>" +
-          "<p id='balanceDisplay2' style='color:#FFFFFF;font-size:26px;font-weight:800;margin:0;'>&#8358;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;</p>" +
-          "<button id='toggleBalance2' data-visible='false' data-amount='" + balance + "' style='background:rgba(255,255,255,0.2);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;'>" +
-            "<span style='font-size:16px;'>&#128065;</span>" +
-          "</button>" +
-        "</div>" +
+          "<p style='color:#FFFFFF;font-size:26px;font-weight:800;margin:0;'>&#8358;" + balance.toLocaleString() + "</p>" +
         "</div>" +
         "<span style='font-size:32px;'>&#128184;</span>" +
       "</div>" +
@@ -1906,26 +1898,6 @@ function showWithdrawal(user, balance) {
     "</div></div>"
 
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
-
-  // Eye toggle for withdrawal balance
-  var toggleBal2 = document.getElementById("toggleBalance2")
-  if (toggleBal2) {
-    toggleBal2.addEventListener("click", function() {
-      var display = document.getElementById("balanceDisplay2")
-      var visible = toggleBal2.dataset.visible === "true"
-      var amt = Number(toggleBal2.dataset.amount)
-      if (visible) {
-        display.innerHTML = "&#8358;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"
-        toggleBal2.dataset.visible = "false"
-        toggleBal2.querySelector("span").innerHTML = "&#128065;"
-      } else {
-        display.innerHTML = "&#8358;" + amt.toLocaleString()
-        toggleBal2.dataset.visible = "true"
-        toggleBal2.querySelector("span").innerHTML = "&#128683;"
-      }
-    })
-  }
-
   document.getElementById("submitWithdrawBtn").addEventListener("click", async () => {
     const bankName      = document.getElementById("bankName").value.trim()
     const accountNumber = document.getElementById("accountNumber").value.trim()
@@ -1939,7 +1911,7 @@ function showWithdrawal(user, balance) {
     if (!accountName)                     { errEl.textContent = "Please enter your account name"; errEl.style.display = "block"; return }
     if (!amount || amount <= 0)           { errEl.textContent = "Please enter a valid amount"; errEl.style.display = "block"; return }
     if (amount > balance)                 { errEl.textContent = "Amount exceeds your available balance"; errEl.style.display = "block"; return }
-    if (amount < 500)                     { errEl.textContent = "Minimum withdrawal is â‚¦500"; errEl.style.display = "block"; return }
+    if (amount < 500)                     { errEl.textContent = "Minimum withdrawal is ₦500"; errEl.style.display = "block"; return }
 
     // Ask for PIN before processing
     checkWithdrawalPin(user, async () => {
@@ -1947,7 +1919,7 @@ function showWithdrawal(user, balance) {
     const { error } = await supabase.from("withdrawal_requests").insert({ user_id: user.id, amount, bank_name: bankName, account_number: accountNumber, account_name: accountName, status: "pending" })
     if (error) { setBtn("submitWithdrawBtn", false, "Request Withdrawal"); errEl.textContent = "Failed: " + error.message; errEl.style.display = "block"; return }
 
-    await supabase.from("notifications").insert({ user_id: user.id, title: "Withdrawal Request Submitted", body: "Your withdrawal of â‚¦" + amount.toLocaleString() + " is being processed.", type: "withdrawal", data: {} })
+    await supabase.from("notifications").insert({ user_id: user.id, title: "Withdrawal Request Submitted", body: "Your withdrawal of ₦" + amount.toLocaleString() + " is being processed.", type: "withdrawal", data: {} })
 
     app.innerHTML =
       "<div style='min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
@@ -1967,7 +1939,7 @@ function showWithdrawal(user, balance) {
   })
 }
 
-// â”€â”€ RATINGS & REVIEWS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── RATINGS & REVIEWS ─────────────────────────────────────────────────────────
 
 async function showRateUser(user, contract) {
   pushScreen("rate", () => showRateUser(user, contract))
@@ -2130,7 +2102,7 @@ async function showUserReviews(profileId, profileName) {
   container.innerHTML = html
 }
 
-// â”€â”€ WORKER DISCOVERY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── WORKER DISCOVERY ─────────────────────────────────────────────────────────
 
 async function showWorkerDiscovery(user) {
   pushScreen("workers", () => showWorkerDiscovery(user))
@@ -2427,7 +2399,7 @@ async function showHireWorker(user, worker) {
   })
 }
 
-// â”€â”€ ADMIN PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── ADMIN PANEL ───────────────────────────────────────────────────────────────
 
 async function showAdminPanel() {
   pushScreen("admin", () => showAdminPanel())
@@ -2618,24 +2590,46 @@ async function loadAdminTab(tab) {
       html += "</div>"
     })
     box.innerHTML = html
-    box.querySelectorAll(".approveWBtn").forEach(btn => btn.addEventListener("click", async () => {
-      const amt = Number(btn.dataset.amt)
-      if (!confirm("Approve withdrawal of NGN " + amt.toLocaleString() + "? Confirm you have sent the money to their bank.")) return
-      btn.disabled = true; btn.textContent = "Approving..."
-      const { data: rpcResult, error: rpcErr } = await supabase.rpc("approve_withdrawal_admin", {
-        p_withdrawal_id: btn.dataset.id,
-        p_admin_uid:     (await supabase.auth.getUser()).data.user.id
-      })
-      if (rpcErr || !rpcResult?.ok) {
-        alert("Approval failed: " + (rpcErr?.message || rpcResult?.error || "Unknown error"))
-        btn.disabled = false; btn.textContent = "Approve & Pay"
-        return
-      }
-      await supabase.from("notifications").insert({ user_id: btn.dataset.uid, title: "Withdrawal Approved!", body: "Your withdrawal of NGN " + amt.toLocaleString() + " has been sent to your bank.", type: "withdrawal_approved", data: {} })
-      await loadAdminStats(); await loadAdminTab("withdrawals")
-    }))
 
-    box.querySelectorAll(".rejectWBtn").forEach(btn => btn.addEventListener("click", async () => {
+    box.querySelectorAll(".approveWBtn").forEach(function(btn) {
+    btn.addEventListener("click", async function() {
+      var amt = Number(btn.dataset.amt)
+      var wid = btn.dataset.id
+      var uid = btn.dataset.uid
+      if (!confirm("Approve NGN " + amt.toLocaleString() + " withdrawal? Only confirm after sending the money.")) return
+      btn.disabled = true
+      btn.textContent = "Approving..."
+      try {
+        var me = await supabase.auth.getUser()
+        var adminId = me.data.user.id
+        var res = await supabase.rpc("approve_withdrawal_admin", {
+          p_withdrawal_id: wid,
+          p_admin_uid: adminId
+        })
+        if (res.error || !res.data || !res.data.ok) {
+          var msg = (res.error && res.error.message) || (res.data && res.data.error) || "Unknown error"
+          alert("Approval failed: " + msg)
+          btn.disabled = false
+          btn.textContent = "Approve & Pay"
+          return
+        }
+        await supabase.from("notifications").insert({
+          user_id: uid,
+          title: "Withdrawal Approved!",
+          body: "Your withdrawal of NGN " + amt.toLocaleString() + " has been processed.",
+          type: "withdrawal_approved",
+          data: {}
+        })
+        await loadAdminStats()
+        await loadAdminTab("withdrawals")
+      } catch(e) {
+        alert("Error: " + e.message)
+        btn.disabled = false
+        btn.textContent = "Approve & Pay"
+      }
+    })
+  })
+  box.querySelectorAll(".rejectWBtn").forEach(btn => btn.addEventListener("click", async () => {
       const reason = prompt("Reason for rejection:")
       if (!reason) return
       btn.disabled = true; btn.textContent = "Rejecting..."
@@ -2647,11 +2641,11 @@ async function loadAdminTab(tab) {
 }
 
 async function checkWithdrawalPin(user, onSuccess) {
-  const { data: profile } = await supabase.from("profiles").select("withdrawal_pin").eq("id", user.id).single()
-  if (!profile?.withdrawal_pin) {
+  const { data: profile } = await supabase.from("profiles").select("withdrawal_pin_hash").eq("id", user.id).single()
+  if (!profile?.withdrawal_pin_hash) {
     showSetWithdrawalPin(user, onSuccess)
   } else {
-    showVerifyWithdrawalPin(user, profile.withdrawal_pin, onSuccess)
+    showVerifyWithdrawalPin(user, profile.withdrawal_pin_hash, onSuccess)
   }
 }
 
@@ -2690,7 +2684,7 @@ function showSetWithdrawalPin(user, onSuccess) {
     } else {
       if (val !== pin1) { errEl.textContent = "PINs do not match. Try again."; errEl.style.display = "block"; inp.value = ""; return }
       setBtn("wpinBtn", true, "Create PIN")
-      await supabase.from("profiles").update({ withdrawal_pin: val }).eq("id", user.id)
+      await supabase.rpc("set_withdrawal_pin", { p_user_id: user.id, p_pin: val })
       onSuccess()
     }
   })
@@ -2737,146 +2731,6 @@ function showVerifyWithdrawalPin(user, storedPin, onSuccess) {
   })
 }
 
-// â”€â”€ SETTINGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function showSettings(user) {
-  pushScreen("settings", () => showSettings(user))
-
-  var currentTheme = localStorage.getItem("profix_theme") || "system"
-
-  function themeBtn(id, label, icon, active) {
-    return "<button id='" + id + "' style='flex:1;padding:12px 8px;border-radius:12px;border:2px solid " + (active?"var(--primary)":"var(--border)") + ";background:" + (active?"rgba(0,194,89,0.10)":"transparent") + ";color:" + (active?"var(--primary)":"var(--text-secondary)") + ";font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;'>" +
-      "<span style='font-size:22px;'>" + icon + "</span>" + label + "</button>"
-  }
-
-  app.innerHTML =
-    "<div style='min-height:100vh;display:flex;flex-direction:column;background:var(--bg-page);'>" +
-    navBar("Settings") +
-    "<div style='flex:1;padding:16px 16px 40px;max-width:520px;margin:0 auto;width:100%;box-sizing:border-box;'>" +
-
-      // Theme
-      "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm);'>" +
-        "<p style='color:var(--text-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 14px;'>Appearance</p>" +
-        "<div style='display:flex;gap:8px;'>" +
-          themeBtn("themeLight", "Light", "&#9728;", currentTheme==="light") +
-          themeBtn("themeDark",  "Dark",  "&#127769;", currentTheme==="dark") +
-          themeBtn("themeSystem","System","&#10040;", currentTheme==="system") +
-        "</div>" +
-      "</div>" +
-
-      // Security
-      "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm);'>" +
-        "<p style='color:var(--text-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 14px;'>Security</p>" +
-        "<button id='changeLoginPinBtn' style='width:100%;display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg-card-subtle);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:10px;'>" +
-          "<div style='width:38px;height:38px;background:rgba(0,194,89,0.10);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'><span style='font-size:18px;'>&#128273;</span></div>" +
-          "<div style='flex:1;text-align:left;'>" +
-            "<p style='color:var(--text-primary);font-size:14px;font-weight:600;margin:0 0 2px;'>Change Login PIN</p>" +
-            "<p style='color:var(--text-muted);font-size:12px;margin:0;'>Update your 6-digit login PIN</p>" +
-          "</div>" +
-          "<span style='color:var(--text-muted);font-size:18px;'>&#8250;</span>" +
-        "</button>" +
-        "<button id='changeWithdrawPinBtn' style='width:100%;display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg-card-subtle);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;'>" +
-          "<div style='width:38px;height:38px;background:rgba(0,194,89,0.10);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'><span style='font-size:18px;'>&#128184;</span></div>" +
-          "<div style='flex:1;text-align:left;'>" +
-            "<p style='color:var(--text-primary);font-size:14px;font-weight:600;margin:0 0 2px;'>Change Withdrawal PIN</p>" +
-            "<p style='color:var(--text-muted);font-size:12px;margin:0;'>Update your 4-digit withdrawal PIN</p>" +
-          "</div>" +
-          "<span style='color:var(--text-muted);font-size:18px;'>&#8250;</span>" +
-        "</button>" +
-      "</div>" +
-
-    "</div></div>"
-
-  document.getElementById("backBtn").addEventListener("click", () => popScreen())
-
-  // Theme buttons
-  function applyTheme(theme) {
-    currentTheme = theme
-    localStorage.setItem("profix_theme", theme)
-    var root = document.documentElement
-    if (theme === "light") {
-      root.setAttribute("data-theme", "light")
-    } else if (theme === "dark") {
-      root.setAttribute("data-theme", "dark")
-    } else {
-      var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-      root.setAttribute("data-theme", prefersDark ? "dark" : "light")
-    }
-    showSettings(user)
-  }
-
-  document.getElementById("themeLight").addEventListener("click", () => applyTheme("light"))
-  document.getElementById("themeDark").addEventListener("click",  () => applyTheme("dark"))
-  document.getElementById("themeSystem").addEventListener("click",() => applyTheme("system"))
-
-  // Change Login PIN
-  document.getElementById("changeLoginPinBtn").addEventListener("click", () => {
-    showChangeLoginPin(user)
-  })
-
-  // Change Withdrawal PIN
-  document.getElementById("changeWithdrawPinBtn").addEventListener("click", () => {
-    showSetWithdrawalPin(user, () => {
-      alert("Withdrawal PIN updated successfully!")
-      showSettings(user)
-    })
-  })
-}
-
-function showChangeLoginPin(user) {
-  pushScreen("changeLoginPin", () => showChangeLoginPin(user))
-  var step = 1, newPin = ""
-
-  function render(title, sub, btnText) {
-    app.innerHTML =
-      "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
-      "<div style='width:100%;max-width:400px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
-        "<div style='text-align:center;margin-bottom:22px;'>" +
-          "<div style='width:64px;height:64px;background:rgba(0,194,89,0.10);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;border:2px solid rgba(0,194,89,0.25);'><span style='font-size:28px;'>&#128273;</span></div>" +
-          "<h2 style='color:var(--text-primary);font-size:20px;font-weight:700;margin:0 0 8px;'>" + title + "</h2>" +
-          "<p style='color:var(--text-secondary);font-size:13px;margin:0;'>" + sub + "</p>" +
-        "</div>" +
-        "<div style='position:relative;width:100%;margin-bottom:8px;'>" +
-          "<input id='clpInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 50px 15px 15px;border-radius:12px;border:2px solid var(--border);color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-          "<button id='clpEye' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted);padding:4px;'>&#128065;</button>" +
-        "</div>" +
-        "<p id='clpErr' style='color:var(--danger);font-size:13px;margin:0 0 14px;display:none;'></p>" +
-        "<button id='clpBtn' style='width:100%;padding:14px;background:var(--primary);color:#FFFFFF;font-size:15px;font-weight:700;border:none;border-radius:12px;cursor:pointer;min-height:50px;box-shadow:var(--shadow-green);'>" + btnText + "</button>" +
-        "<button id='clpBack' style='width:100%;padding:12px;background:none;color:var(--text-muted);font-size:13px;border:none;cursor:pointer;margin-top:8px;'>Cancel</button>" +
-      "</div></div>"
-
-    var inp = document.getElementById("clpInput")
-    var eye = document.getElementById("clpEye")
-    var err = document.getElementById("clpErr")
-    inp.focus()
-    inp.addEventListener("input", () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
-    eye.addEventListener("click", function() {
-      if (inp.type === "password") { inp.type = "tel"; eye.innerHTML = "&#128683;" }
-      else { inp.type = "password"; eye.innerHTML = "&#128065;" }
-    })
-    document.getElementById("clpBack").addEventListener("click", () => popScreen())
-    document.getElementById("clpBtn").addEventListener("click", async function() {
-      var val = inp.value.trim()
-      err.style.display = "none"
-      if (val.length < 6) { err.textContent = "PIN must be 6 digits"; err.style.display = "block"; return }
-
-      if (step === 1) {
-        newPin = val; step = 2
-        render("Confirm New PIN", "Enter your new PIN again to confirm", "Save PIN")
-      } else {
-        if (val !== newPin) { err.textContent = "PINs do not match. Try again."; err.style.display = "block"; inp.value = ""; return }
-        document.getElementById("clpBtn").disabled = true
-        document.getElementById("clpBtn").textContent = "Saving..."
-        await supabase.from("profiles").update({ pin: val }).eq("id", user.id)
-        alert("Login PIN updated successfully!")
-        popScreen()
-      }
-    })
-  }
-
-  render("New Login PIN", "Enter a new 6-digit PIN", "Next")
-}
-
-
 async function boot() {
   initTheme()
   setupAndroidBack()
@@ -2902,4 +2756,3 @@ async function boot() {
 }
 
 boot()
-
