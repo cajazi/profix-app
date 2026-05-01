@@ -1,5 +1,12 @@
 import { supabase } from "./supabase.js"
 
+// XSS sanitizer - use for all user-generated content in innerHTML
+function sanitize(str) {
+  var d = document.createElement("div")
+  d.appendChild(document.createTextNode(String(str || "")))
+  return d.innerHTML
+}
+
 const app = document.getElementById("app")
 let currentEmail = ""
 let currentUser  = null
@@ -229,7 +236,7 @@ function showOTP(mode) {
   const otpInput  = document.getElementById("otpInput")
   otpInput.focus()
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
-  otpInput.addEventListener("input",   () => { otpInput.value = otpInput.value.replace(/D/g,"").slice(0,6) })
+  otpInput.addEventListener("input",   () => { otpInput.value = otpInput.value.replace(/\D/g,"").slice(0,6) })
   otpInput.addEventListener("keydown", e => { if (e.key==="Enter") verifyBtn.click() })
   document.getElementById("resendBtn").addEventListener("click", async () => {
     const rb = document.getElementById("resendBtn")
@@ -270,11 +277,12 @@ function showCreatePin(user) {
       "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
       "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
+      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Next</button>" +
     "</div></div>"
   const inp = document.getElementById("pinInput")
   inp.focus()
-  inp.addEventListener("input", () => { inp.value = inp.value.replace(/D/g,"").slice(0,6) })
+  inp.addEventListener("input", () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
     hideErr("pinErr")
@@ -318,12 +326,13 @@ function showVerifyPin(user, trustAfter) {
       "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
       "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
+      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
       "<button id='forgotBtn' style='width:100%;margin-top:10px;padding:10px;background:none;color:var(--text-secondary);font-size:13px;border:none;cursor:pointer;'>Forgot PIN? Use email code</button>" +
     "</div></div>"
   const inp = document.getElementById("pinInput")
   inp.focus()
-  inp.addEventListener("input",   () => { inp.value = inp.value.replace(/D/g,"").slice(0,6) })
+  inp.addEventListener("input",   () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
   inp.addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("pinBtn").click() })
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
@@ -367,6 +376,17 @@ function showVerifyPin(user, trustAfter) {
 // ── PIN LOGIN (trusted device) ─────────────────────────────────────────────────
 async function showPinLogin(email, profileId) {
   pushScreen("pinLogin", () => showPinLogin(email, profileId))
+  // Check if account is locked
+  const { data: lockCheck } = await supabase.from("profiles").select("pin_attempts,pin_locked_until").eq("id", profileId).single()
+  if (lockCheck && lockCheck.pin_locked_until) {
+    const lockedUntil = new Date(lockCheck.pin_locked_until)
+    if (lockedUntil > new Date()) {
+      const mins = Math.ceil((lockedUntil - new Date()) / 60000)
+      app.innerHTML = "<div style='min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'><div style='width:100%;max-width:380px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:24px;padding:36px 24px;text-align:center;'><span style='font-size:52px;'>&#128274;</span><h2 style='color:var(--danger);font-size:20px;font-weight:700;margin:16px 0 8px;'>Account Locked</h2><p style='color:var(--text-secondary);font-size:14px;margin:0 0 20px;'>Too many wrong attempts. Try again in " + mins + " minute" + (mins===1?"":"s") + ".</p><button id='useEmailBtn' style='width:100%;padding:14px;background:var(--primary);color:#FFFFFF;font-size:15px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Use Email Code Instead</button></div></div>"
+      document.getElementById("useEmailBtn").addEventListener("click", () => { popScreen(); showLogin() })
+      return
+    }
+  }
   let attempts = 0
   app.innerHTML =
     "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
@@ -378,12 +398,13 @@ async function showPinLogin(email, profileId) {
       "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
       "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
+      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
       "<button id='otpBtn' style='width:100%;margin-top:10px;padding:10px;background:none;color:var(--text-secondary);font-size:13px;border:none;cursor:pointer;'>Use email code instead</button>" +
     "</div></div>"
   const inp = document.getElementById("pinInput")
   inp.focus()
-  inp.addEventListener("input",   () => { inp.value = inp.value.replace(/D/g,"").slice(0,6) })
+  inp.addEventListener("input",   () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
   inp.addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("pinBtn").click() })
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
@@ -580,17 +601,19 @@ function showDashboard(user) {
   })
   document.getElementById("menuFindWorkersBtn").addEventListener("click", () => { closeMenu(); showWorkerDiscovery(user) })
   document.getElementById("menuContractsBtn").addEventListener("click", () => { closeMenu(); showMyContracts(user) })
-  // Show admin button for admin emails
-  const adminEmails = ["cossybest24@gmail.com","cossyjay24@gmail.com","support@cosmas.dev"]
-  if (adminEmails.includes(user.email)) {
+  // Show admin button for admin users (server-side check)
+  ;(async function() {
+    const { data: adminProfile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single()
+    if (adminProfile && adminProfile.is_admin === true) {
     const adminBtn = document.createElement("button")
     adminBtn.id = "menuAdminBtn"
     adminBtn.style.cssText = "width:100%;display:flex;align-items:center;gap:14px;padding:10px 14px;background:none;border:none;border-radius:10px;cursor:pointer;"
     adminBtn.innerHTML = "<span style='font-size:20px;'>&#128274;</span><span style='color:#F59E0B;font-size:14px;font-weight:600;text-align:left;'>Admin Panel</span>"
     adminBtn.addEventListener("click", () => { closeMenu(); showAdminPanel() })
     const signOutBtn = document.getElementById("menuSignOutBtn")
-    if (signOutBtn) signOutBtn.parentNode.insertBefore(adminBtn, signOutBtn)
-  }
+      if (signOutBtn) signOutBtn.parentNode.insertBefore(adminBtn, signOutBtn)
+    }
+  })()
   document.getElementById("menuSignOutBtn").addEventListener("click", async () => {
     closeMenu(); sessionStorage.removeItem("profix_pin_ok"); currentEmail = ""; currentUser = null; showLogin()
   })
@@ -1849,6 +1872,23 @@ async function showWallet(user) {
       }
     })
   }
+  var toggleBalBtn = document.getElementById("toggleBalance")
+  if (toggleBalBtn) {
+    toggleBalBtn.addEventListener("click", function() {
+      var display = document.getElementById("balanceDisplay")
+      var visible = toggleBalBtn.dataset.visible === "true"
+      var amt = Number(toggleBalBtn.dataset.amount)
+      if (visible) {
+        display.innerHTML = "&#8358;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"
+        toggleBalBtn.dataset.visible = "false"
+        toggleBalBtn.querySelector("span").innerHTML = "&#128065;"
+      } else {
+        display.innerHTML = "&#8358;" + amt.toLocaleString()
+        toggleBalBtn.dataset.visible = "true"
+        toggleBalBtn.querySelector("span").innerHTML = "&#128683;"
+      }
+    })
+  }
   const withdrawBtn = document.getElementById("withdrawBtn")
   if (withdrawBtn) {
     withdrawBtn.addEventListener("click", () => {
@@ -2729,6 +2769,58 @@ function showVerifyWithdrawalPin(user, storedPin, onSuccess) {
     }
     onSuccess()
   })
+}
+
+// ── PRIVACY POLICY ───────────────────────────────────────────────
+function showPrivacyPolicy() {
+  pushScreen("privacy", () => showPrivacyPolicy())
+  function legalSection(title, body) {
+    return "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm);'>" +
+      "<p style='color:var(--text-primary);font-size:14px;font-weight:700;margin:0 0 8px;'>" + title + "</p>" +
+      "<p style='color:var(--text-secondary);font-size:13px;margin:0;line-height:1.7;'>" + body + "</p>" +
+      "</div>"
+  }
+  app.innerHTML =
+    "<div style='min-height:100vh;display:flex;flex-direction:column;background:var(--bg-page);'>" +
+    navBar("Privacy Policy") +
+    "<div style='flex:1;padding:20px 16px 40px;max-width:520px;margin:0 auto;width:100%;box-sizing:border-box;'>" +
+      "<p style='color:var(--text-muted);font-size:12px;margin:0 0 20px;'>Last updated: May 2026</p>" +
+      legalSection("1. Data We Collect", "Name, email, phone number, government ID and selfie (KYC), bank account details, and transaction history.") +
+      legalSection("2. How We Use Your Data", "To verify your identity, process payments and withdrawals, send account notifications, and prevent fraud.") +
+      legalSection("3. Data Sharing", "We share data with Paystack for payment processing only. We do NOT sell your data. We may share with Nigerian regulatory authorities if required by law.") +
+      legalSection("4. Data Retention", "Account data retained for 7 years (CBN requirement). KYC documents retained for 5 years. You may request deletion subject to legal requirements.") +
+      legalSection("5. Security", "All data encrypted in transit using TLS. PINs hashed using bcrypt. KYC documents stored in encrypted cloud storage.") +
+      legalSection("6. Your Rights", "Access, correct, or request deletion of your data by contacting support@profix.ng") +
+      legalSection("7. Contact", "ProFix Support | Email: support@profix.ng | Nigeria") +
+    "</div></div>"
+  document.getElementById("backBtn").addEventListener("click", () => popScreen())
+}
+
+// ── TERMS OF SERVICE ─────────────────────────────────────────────
+function showTermsOfService() {
+  pushScreen("terms", () => showTermsOfService())
+  function legalSection(title, body) {
+    return "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm);'>" +
+      "<p style='color:var(--text-primary);font-size:14px;font-weight:700;margin:0 0 8px;'>" + title + "</p>" +
+      "<p style='color:var(--text-secondary);font-size:13px;margin:0;line-height:1.7;'>" + body + "</p>" +
+      "</div>"
+  }
+  app.innerHTML =
+    "<div style='min-height:100vh;display:flex;flex-direction:column;background:var(--bg-page);'>" +
+    navBar("Terms of Service") +
+    "<div style='flex:1;padding:20px 16px 40px;max-width:520px;margin:0 auto;width:100%;box-sizing:border-box;'>" +
+      "<p style='color:var(--text-muted);font-size:12px;margin:0 0 20px;'>Last updated: May 2026</p>" +
+      legalSection("1. Acceptance", "By using ProFix, you agree to these Terms. If you do not agree, do not use the app.") +
+      legalSection("2. Eligibility", "You must be 18 years or older and a resident of Nigeria to use ProFix.") +
+      legalSection("3. Wallet & Payments", "ProFix holds funds in escrow during active jobs. Withdrawals processed within 24 hours. ProFix charges a commission on completed jobs. All transactions are final unless disputed within 24 hours.") +
+      legalSection("4. KYC Verification", "You must complete identity verification before posting or accepting jobs. Providing false documents will result in permanent account suspension.") +
+      legalSection("5. Prohibited Activities", "You may not use ProFix for money laundering, fraud, or any illegal activity. Violations will be reported to Nigerian authorities.") +
+      legalSection("6. Dispute Resolution", "Disputes must be raised within 24 hours of job completion. ProFix admin decisions are final.") +
+      legalSection("7. Limitation of Liability", "ProFix is not liable for losses from user disputes, network failures, or third-party payment issues.") +
+      legalSection("8. Termination", "ProFix reserves the right to suspend accounts that violate these terms without prior notice.") +
+      legalSection("9. Contact", "ProFix Support | Email: support@profix.ng | Nigeria") +
+    "</div></div>"
+  document.getElementById("backBtn").addEventListener("click", () => popScreen())
 }
 
 async function boot() {
