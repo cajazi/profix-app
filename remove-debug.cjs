@@ -1,0 +1,6 @@
+﻿const fs = require('fs')
+let c = fs.readFileSync('src/main.js', 'utf8')
+c = c.replace(`    console.log("escrowAmount el:", el)\n`, '')
+c = c.replace(`      console.log("Total escrow:", total)\n`, '')
+fs.writeFileSync('src/main.js', c, 'utf8')
+console.log('Debug removed. Lines:', c.split('\n').length)
