@@ -1,4 +1,4 @@
-import { supabase } from "./supabase.js"
+﻿import { supabase } from "./supabase.js"
 
 // XSS sanitizer - use for all user-generated content in innerHTML
 function sanitize(str) {
@@ -72,7 +72,7 @@ function navBar(title) {
 }
 /* OPAY_THEME_APPLIED */
 
-// ── THEME SYSTEM ─────────────────────────────────────────────────────────────
+// â”€â”€ THEME SYSTEM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let _themeMediaQuery = null
 
 function applyTheme(mode) {
@@ -101,20 +101,20 @@ function _applySystemTheme() {
 
 function _onSystemThemeChange() { _applySystemTheme() }
 
-const _themeLabels = { light: '☀️ Light', dark: '🌙 Dark', system: '🔄 Auto' }
+const _themeLabels = { light: 'â˜€ï¸ Light', dark: 'ðŸŒ™ Dark', system: 'ðŸ”„ Auto' }
 const _themeCycle  = ['light', 'dark', 'system']
 
 function initTheme() {
   const saved = localStorage.getItem('profix_theme') || 'system'
   applyTheme(saved)
 }
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function showLoading() {
   app.innerHTML = "<div style='min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg-page);'><div style='text-align:center;'><div style='width:52px;height:52px;border:4px solid #33CE7A;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;'></div><p style='color:var(--text-secondary);font-size:14px;margin:0;'>Loading ProFix...</p></div></div>"
 }
 
-// ── DEVICE + PIN HELPERS ──────────────────────────────────────────────────────
+// â”€â”€ DEVICE + PIN HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function calculateCommission(amount) {
   const amt = Number(amount)
@@ -159,7 +159,7 @@ async function trustDevice(userId) {
   }
 }
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
+// â”€â”€ LOGIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showLogin() {
   backStack = []; isGoingBack = false
   pushScreen("login", showLogin)
@@ -215,7 +215,7 @@ function showLogin() {
   })
 }
 
-// ── OTP ───────────────────────────────────────────────────────────────────────
+// â”€â”€ OTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showOTP(mode) {
   pushScreen("otp", () => showOTP(mode))
   app.innerHTML =
@@ -263,7 +263,7 @@ function showOTP(mode) {
   })
 }
 
-// ── CREATE PIN ────────────────────────────────────────────────────────────────
+// â”€â”€ CREATE PIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showCreatePin(user) {
   pushScreen("createPin", () => showCreatePin(user))
   let pin1 = "", step = 1
@@ -274,15 +274,21 @@ function showCreatePin(user) {
         "<h2 id='pinTitle' style='color:var(--text-primary);font-size:21px;font-weight:700;margin:12px 0 8px;'>Create your PIN</h2>" +
         "<p id='pinSub' style='color:var(--text-secondary);font-size:14px;margin:0;'>Protects your account on this device</p>" +
       "</div>" +
-      "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
+      "<div style='position:relative;width:100%;'>" +
+      "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
+      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#128065;</button>" +
+      "</div>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
-      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
-      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Next</button>" +
     "</div></div>"
   const inp = document.getElementById("pinInput")
   inp.focus()
   inp.addEventListener("input", () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
+  var _eye = document.getElementById("pinEyeBtn")
+  if (_eye) _eye.addEventListener("click", function() {
+    inp.type = inp.type === "password" ? "tel" : "password"
+    _eye.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
+  })
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
     hideErr("pinErr")
@@ -312,7 +318,7 @@ function showCreatePin(user) {
   })
 }
 
-// ── VERIFY PIN (existing user, new device) ────────────────────────────────────
+// â”€â”€ VERIFY PIN (existing user, new device) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showVerifyPin(user, trustAfter) {
   pushScreen("verifyPin", () => showVerifyPin(user, trustAfter))
   let attempts = 0
@@ -323,16 +329,22 @@ function showVerifyPin(user, trustAfter) {
         "<h2 style='color:var(--text-primary);font-size:21px;font-weight:700;margin:12px 0 8px;'>Enter your PIN</h2>" +
         "<p style='color:var(--text-secondary);font-size:14px;margin:0;'>" + (user?.email||currentEmail) + "</p>" +
       "</div>" +
-      "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
+      "<div style='position:relative;width:100%;'>" +
+      "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
+      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#128065;</button>" +
+      "</div>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
-      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
-      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
       "<button id='forgotBtn' style='width:100%;margin-top:10px;padding:10px;background:none;color:var(--text-secondary);font-size:13px;border:none;cursor:pointer;'>Forgot PIN? Use email code</button>" +
     "</div></div>"
   const inp = document.getElementById("pinInput")
   inp.focus()
   inp.addEventListener("input",   () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
+  var _eye = document.getElementById("pinEyeBtn")
+  if (_eye) _eye.addEventListener("click", function() {
+    inp.type = inp.type === "password" ? "tel" : "password"
+    _eye.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
+  })
   inp.addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("pinBtn").click() })
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
@@ -373,7 +385,7 @@ function showVerifyPin(user, trustAfter) {
   })
 }
 
-// ── PIN LOGIN (trusted device) ─────────────────────────────────────────────────
+// â”€â”€ PIN LOGIN (trusted device) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function showPinLogin(email, profileId) {
   pushScreen("pinLogin", () => showPinLogin(email, profileId))
   // Check if account is locked
@@ -395,16 +407,22 @@ async function showPinLogin(email, profileId) {
         "<h2 style='color:var(--text-primary);font-size:21px;font-weight:700;margin:12px 0 8px;'>Welcome back</h2>" +
         "<p style='color:var(--text-secondary);font-size:14px;margin:0;'>" + email + "</p>" +
       "</div>" +
-      "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
+      "<div style='position:relative;width:100%;'>" +
+      "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
+      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#128065;</button>" +
+      "</div>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
-      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
-      "<button id='pinEyeBtn' type='button' onclick=\"var i=document.getElementById('pinInput');i.type=i.type==='password'?'tel':'password';this.innerHTML=i.type==='password'?'&#128065;':'&#128683;'\" style='width:100%;margin-top:8px;padding:8px;background:none;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:18px;color:var(--text-muted);'>&#128065; Show PIN</button>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
       "<button id='otpBtn' style='width:100%;margin-top:10px;padding:10px;background:none;color:var(--text-secondary);font-size:13px;border:none;cursor:pointer;'>Use email code instead</button>" +
     "</div></div>"
   const inp = document.getElementById("pinInput")
   inp.focus()
   inp.addEventListener("input",   () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
+  var _eye = document.getElementById("pinEyeBtn")
+  if (_eye) _eye.addEventListener("click", function() {
+    inp.type = inp.type === "password" ? "tel" : "password"
+    _eye.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
+  })
   inp.addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("pinBtn").click() })
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
@@ -1090,7 +1108,7 @@ function renderProfileView(user, profile, container) {
         "<button id='startKycBtn' style='width:100%;padding:13px;background:var(--primary);color:#FFFFFF;font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;min-height:46px;'>Verify Identity Now</button>" :
         "<div style='display:flex;align-items:center;gap:10px;background:rgba(0,194,89,0.07);border:1px solid rgba(0,194,89,0.2);border-radius:10px;padding:12px;'>" +
           "<span style='font-size:18px;'>&#128336;</span>" +
-          "<p style='color:var(--primary);font-size:13px;font-weight:600;margin:0;'>Documents submitted — under review</p>" +
+          "<p style='color:var(--primary);font-size:13px;font-weight:600;margin:0;'>Documents submitted â€” under review</p>" +
         "</div>"
       ) +
     "</div>" +
@@ -1494,7 +1512,7 @@ async function showCreateContract(user, room) {
     const errEl = document.getElementById("contractErr")
     errEl.style.display = "none"
     if (!price || price <= 0) { errEl.textContent = "Please enter the agreed price"; errEl.style.display = "block"; return }
-    if (price < 100) { errEl.textContent = "Minimum contract amount is ₦100"; errEl.style.display = "block"; return }
+    if (price < 100) { errEl.textContent = "Minimum contract amount is â‚¦100"; errEl.style.display = "block"; return }
     setBtn("createContractBtn", true, "Create Contract & Pay")
 
     const workerId = room.owner_id === user.id ? room.worker_id : room.owner_id
@@ -1569,7 +1587,7 @@ function showPayment(user, contract) {
 
     if (typeof PaystackPop === "undefined") {
       alert("Payment system not loaded. Check your internet connection.")
-      btn.disabled = false; btn.textContent = "Pay ₦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
+      btn.disabled = false; btn.textContent = "Pay â‚¦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
       return
     }
     try {
@@ -1577,12 +1595,12 @@ function showPayment(user, contract) {
         supabase.from("payments").update({ status: "paid", paid_at: new Date().toISOString() }).eq("paystack_ref", ref)
           .then(function() { return supabase.from("contracts").update({ status: "active", funded_at: new Date().toISOString() }).eq("id", contract.id) })
         .then(function() { return supabase.from("jobs").update({ status: "closed" }).eq("id", contract.job_id) })
-          .then(function() { return supabase.from("notifications").insert({ user_id: contract.worker_id, title: "Payment Received!", body: "₦" + Number(contract.agreed_price).toLocaleString() + " received for " + contract.job_title, type: "payment", data: {} }) })
+          .then(function() { return supabase.from("notifications").insert({ user_id: contract.worker_id, title: "Payment Received!", body: "â‚¦" + Number(contract.agreed_price).toLocaleString() + " received for " + contract.job_title, type: "payment", data: {} }) })
           .then(function() { showPaymentSuccess(user, contract) })
       }
       window.__pfClose = function() {
         btn.disabled = false
-        btn.textContent = "Pay ₦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
+        btn.textContent = "Pay â‚¦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
       }
       PaystackPop.setup({
         key: import.meta.env.VITE_PAYSTACK_KEY,
@@ -1596,7 +1614,7 @@ function showPayment(user, contract) {
     } catch(e) {
       console.error("Paystack error:", e)
       btn.disabled = false
-      btn.textContent = "Pay ₦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
+      btn.textContent = "Pay â‚¦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
     }
   })
 }
@@ -1696,11 +1714,11 @@ async function showContractDetail(user, contract) {
   const confirmBtn = document.getElementById("confirmBtn")
   if (confirmBtn) {
     confirmBtn.addEventListener("click", async () => {
-      if (!confirm("Confirm job is complete? This will release ₦" + Number(contract.agreed_price).toLocaleString() + " to the worker.")) return
+      if (!confirm("Confirm job is complete? This will release â‚¦" + Number(contract.agreed_price).toLocaleString() + " to the worker.")) return
       confirmBtn.disabled = true; confirmBtn.textContent = "Releasing payment..."
       await supabase.from("contracts").update({ status: "released", completed_at: new Date().toISOString(), released_at: new Date().toISOString() }).eq("id", contract.id)
       await creditWallet(contract.worker_id, contract.agreed_price, "Payment for " + contract.job_title, contract.id)
-      await supabase.from("notifications").insert({ user_id: contract.worker_id, title: "Payment Released!", body: "₦" + Number(contract.agreed_price).toLocaleString() + " added to your wallet for " + contract.job_title, type: "payment_released", data: { contract_id: contract.id } })
+      await supabase.from("notifications").insert({ user_id: contract.worker_id, title: "Payment Released!", body: "â‚¦" + Number(contract.agreed_price).toLocaleString() + " added to your wallet for " + contract.job_title, type: "payment_released", data: { contract_id: contract.id } })
       contract.status = "released"
       showContractDetail(user, contract)
     })
@@ -1754,7 +1772,7 @@ async function creditWallet(userId, amount, description, contractId) {
   return !error
 }
 
-// ── WALLET & WITHDRAWALS ──────────────────────────────────────────────────────
+// â”€â”€ WALLET & WITHDRAWALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function showWallet(user) {
   pushScreen("wallet", () => showWallet(user))
@@ -1791,7 +1809,7 @@ async function showWallet(user) {
       "</button>" +
     "</div>" +
       (balance > 0
-      ? "<button id='withdrawBtn' style='background:#FFFFFF;color:#007A38;font-size:14px;font-weight:800;padding:12px 28px;border:none;border-radius:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);'>💸 Withdraw Funds</button>"
+      ? "<button id='withdrawBtn' style='background:#FFFFFF;color:#007A38;font-size:14px;font-weight:800;padding:12px 28px;border:none;border-radius:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);'>ðŸ’¸ Withdraw Funds</button>"
       : "<button id='withdrawBtn' style='background:rgba(255,255,255,0.20);color:#FFFFFF;font-size:14px;font-weight:700;padding:12px 28px;border:2px solid rgba(255,255,255,0.5);border-radius:10px;cursor:pointer;'>No funds yet</button>") +
     "</div>" +
 
@@ -1872,23 +1890,7 @@ async function showWallet(user) {
       }
     })
   }
-  var toggleBalBtn = document.getElementById("toggleBalance")
-  if (toggleBalBtn) {
-    toggleBalBtn.addEventListener("click", function() {
-      var display = document.getElementById("balanceDisplay")
-      var visible = toggleBalBtn.dataset.visible === "true"
-      var amt = Number(toggleBalBtn.dataset.amount)
-      if (visible) {
-        display.innerHTML = "&#8358;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"
-        toggleBalBtn.dataset.visible = "false"
-        toggleBalBtn.querySelector("span").innerHTML = "&#128065;"
-      } else {
-        display.innerHTML = "&#8358;" + amt.toLocaleString()
-        toggleBalBtn.dataset.visible = "true"
-        toggleBalBtn.querySelector("span").innerHTML = "&#128683;"
-      }
-    })
-  }
+
   const withdrawBtn = document.getElementById("withdrawBtn")
   if (withdrawBtn) {
     withdrawBtn.addEventListener("click", () => {
@@ -1951,7 +1953,7 @@ function showWithdrawal(user, balance) {
     if (!accountName)                     { errEl.textContent = "Please enter your account name"; errEl.style.display = "block"; return }
     if (!amount || amount <= 0)           { errEl.textContent = "Please enter a valid amount"; errEl.style.display = "block"; return }
     if (amount > balance)                 { errEl.textContent = "Amount exceeds your available balance"; errEl.style.display = "block"; return }
-    if (amount < 500)                     { errEl.textContent = "Minimum withdrawal is ₦500"; errEl.style.display = "block"; return }
+    if (amount < 500)                     { errEl.textContent = "Minimum withdrawal is â‚¦500"; errEl.style.display = "block"; return }
 
     // Ask for PIN before processing
     checkWithdrawalPin(user, async () => {
@@ -1959,7 +1961,7 @@ function showWithdrawal(user, balance) {
     const { error } = await supabase.from("withdrawal_requests").insert({ user_id: user.id, amount, bank_name: bankName, account_number: accountNumber, account_name: accountName, status: "pending" })
     if (error) { setBtn("submitWithdrawBtn", false, "Request Withdrawal"); errEl.textContent = "Failed: " + error.message; errEl.style.display = "block"; return }
 
-    await supabase.from("notifications").insert({ user_id: user.id, title: "Withdrawal Request Submitted", body: "Your withdrawal of ₦" + amount.toLocaleString() + " is being processed.", type: "withdrawal", data: {} })
+    await supabase.from("notifications").insert({ user_id: user.id, title: "Withdrawal Request Submitted", body: "Your withdrawal of â‚¦" + amount.toLocaleString() + " is being processed.", type: "withdrawal", data: {} })
 
     app.innerHTML =
       "<div style='min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
@@ -1979,7 +1981,7 @@ function showWithdrawal(user, balance) {
   })
 }
 
-// ── RATINGS & REVIEWS ─────────────────────────────────────────────────────────
+// â”€â”€ RATINGS & REVIEWS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function showRateUser(user, contract) {
   pushScreen("rate", () => showRateUser(user, contract))
@@ -2142,7 +2144,7 @@ async function showUserReviews(profileId, profileName) {
   container.innerHTML = html
 }
 
-// ── WORKER DISCOVERY ─────────────────────────────────────────────────────────
+// â”€â”€ WORKER DISCOVERY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function showWorkerDiscovery(user) {
   pushScreen("workers", () => showWorkerDiscovery(user))
@@ -2439,7 +2441,7 @@ async function showHireWorker(user, worker) {
   })
 }
 
-// ── ADMIN PANEL ───────────────────────────────────────────────────────────────
+// â”€â”€ ADMIN PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 async function showAdminPanel() {
   pushScreen("admin", () => showAdminPanel())
@@ -2759,19 +2761,21 @@ function showVerifyWithdrawalPin(user, storedPin, onSuccess) {
     const errEl = document.getElementById("wpinErr")
     errEl.style.display = "none"
     if (val.length < 4) { errEl.textContent = "Enter your 4-digit PIN"; errEl.style.display = "block"; return }
-    if (val !== storedPin) {
-      attempts++
-      inp.value = ""
-      errEl.textContent = attempts >= 3 ? "Too many wrong attempts." : "Wrong PIN. Try again."
-      errEl.style.display = "block"
-      if (attempts >= 5) popScreen()
-      return
-    }
-    onSuccess()
+    supabase.rpc("verify_withdrawal_pin", { p_user_id: user.id, p_pin: val }).then(function(res) {
+      if (res.error || !res.data) {
+        attempts++
+        inp.value = ""
+        errEl.textContent = attempts >= 3 ? "Too many wrong attempts." : "Wrong PIN. Try again."
+        errEl.style.display = "block"
+        if (attempts >= 5) popScreen()
+        return
+      }
+      onSuccess()
+    })
   })
 }
 
-// ── PRIVACY POLICY ───────────────────────────────────────────────
+// â”€â”€ PRIVACY POLICY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showPrivacyPolicy() {
   pushScreen("privacy", () => showPrivacyPolicy())
   function legalSection(title, body) {
@@ -2796,7 +2800,7 @@ function showPrivacyPolicy() {
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
 }
 
-// ── TERMS OF SERVICE ─────────────────────────────────────────────
+// â”€â”€ TERMS OF SERVICE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showTermsOfService() {
   pushScreen("terms", () => showTermsOfService())
   function legalSection(title, body) {
@@ -2831,10 +2835,6 @@ async function boot() {
   if (session?.user) {
     currentEmail = session.user.email
     currentUser  = session.user
-    if (sessionStorage.getItem("profix_pin_ok") === "1") {
-      showDashboard(session.user); return
-    }
-    // Check local storage first (faster, avoids RLS issues)
     const savedHash = localStorage.getItem("profix_hash_" + session.user.email)
     if (savedHash) {
       showVerifyPin(session.user, false)
@@ -2842,9 +2842,10 @@ async function boot() {
       showDashboard(session.user)
     }
   } else {
-    // No session - check if we have a known email with PIN for this device
     showLogin()
   }
 }
 
 boot()
+
+
