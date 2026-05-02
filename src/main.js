@@ -2770,6 +2770,8 @@ function showVerifyWithdrawalPin(user, storedPin, onSuccess) {
 
 // â”€â”€ PRIVACY POLICY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showPrivacyPolicy() {
+  window.open("https://cajazi.github.io/profix-app/privacy-policy.html", "_blank")
+  return
   pushScreen("privacy", () => showPrivacyPolicy())
   function legalSection(title, body) {
     return "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm);'>" +
@@ -2840,6 +2842,7 @@ async function boot() {
 }
 
 boot()
+
 
 
 
