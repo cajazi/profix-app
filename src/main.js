@@ -303,9 +303,8 @@ function showCreatePin(user) {
       if (val !== pin1) { showErr("pinErr","PINs do not match"); inp.value = ""; return }
       setBtn("pinBtn", true, "Create PIN")
       const hash = await sha256pin(val)
-      console.log("Saving PIN hash:", hash.slice(0,10), "for user:", user.id)
       const { error: pinErr } = await supabase.from("profiles").update({ pin_hash: hash, pin_set: true }).eq("id", user.id)
-      if (pinErr) { console.error("PIN save error:", pinErr); showErr("pinErr","Failed to save PIN: "+pinErr.message); setBtn("pinBtn",false,"Create PIN"); return }
+      if (pinErr) { showErr("pinErr","Failed to save PIN: "+pinErr.message); setBtn("pinBtn",false,"Create PIN"); return }
       // Save hash locally for offline PIN check
       localStorage.setItem("profix_hash_" + user.email, hash)
       const { data: { session: s } } = await supabase.auth.getSession()
@@ -354,7 +353,6 @@ function showVerifyPin(user, trustAfter) {
     const { data: profile } = await supabase.from("profiles").select("pin_hash").eq("id", user.id).maybeSingle()
     if (!profile?.pin_hash) { showCreatePin(user); return }
     const hash = await sha256pin(val)
-    console.log("VerifyPin - Entered:", hash.slice(0,10), "Stored:", profile.pin_hash.slice(0,10))
     if (hash !== profile.pin_hash) {
       attempts++; setBtn("pinBtn", false, "Unlock"); inp.value = ""
       showErr("pinErr", attempts >= 3 ? "Too many attempts. Use email code." : "Wrong PIN. Try again.")
@@ -888,7 +886,7 @@ async function getOrCreateRoomAsOwner(user, job, workerEmail, workerId) {
   const { data: existing } = await supabase.from("chat_rooms").select("id").eq("job_id",job.id).eq("worker_id",workerId).maybeSingle()
   if (existing) return existing.id
   const { data: newRoom, error } = await supabase.from("chat_rooms").insert({ job_id:job.id, owner_id:user.id, worker_id:workerId, owner_email:user.email, worker_email:workerEmail, job_title:job.title }).select("id").single()
-  if (error) { console.error("Room error:",error.message); return null }
+  if (error) { return null }
   return newRoom.id
 }
 
@@ -896,7 +894,7 @@ async function getOrCreateChatRoom(user, job) {
   const { data: existing } = await supabase.from("chat_rooms").select("id").eq("job_id",job.id).eq("worker_id",user.id).maybeSingle()
   if (existing) return existing.id
   const { data: newRoom, error } = await supabase.from("chat_rooms").insert({ job_id:job.id, owner_id:job.owner_id, worker_id:user.id, owner_email:job.owner_email||"", worker_email:user.email, job_title:job.title }).select("id").single()
-  if (error) { console.error("Room error:",error.message); return null }
+  if (error) { return null }
   return newRoom.id
 }
 
@@ -1612,7 +1610,6 @@ function showPayment(user, contract) {
         onClose: window.__pfClose
       }).openIframe()
     } catch(e) {
-      console.error("Paystack error:", e)
       btn.disabled = false
       btn.textContent = "Pay â‚¦" + Number(contract.agreed_price).toLocaleString() + " via Paystack"
     }
@@ -1753,8 +1750,7 @@ async function getOrCreateWallet(userId) {
 async function creditWallet(userId, amount, description, contractId) {
   const commission   = calculateCommission(amount)
   const workerAmount = Number(amount) - commission
-  console.log("Payment:", amount, "Commission:", commission, "Worker gets:", workerAmount)
-  const { error, data } = await supabase.rpc("credit_worker_wallet", {
+    const { error, data } = await supabase.rpc("credit_worker_wallet", {
     p_user_id: userId,
     p_amount: workerAmount,
     p_description: description,
@@ -1768,7 +1764,6 @@ async function creditWallet(userId, amount, description, contractId) {
     description: "ProFix commission (" + (Math.round(commission/amount*100*10)/10) + "%) for " + description,
     contract_id: contractId
   }).then(() => {})
-  if (error) console.error("creditWallet error:", error)
   return !error
 }
 
@@ -2176,10 +2171,8 @@ async function showWorkerDiscovery(user) {
 
   const { data, error } = await supabase.from("profiles").select("*").eq("role","worker").eq("is_verified",true).neq("id", user.id).order("rating", { ascending: false })
   const { data: activeContracts } = await supabase.from("contracts").select("worker_id").eq("status","active")
-  console.log("Active contracts:", activeContracts)
-  const busyWorkerIds = (activeContracts || []).map(c => c.worker_id)
-  console.log("Busy worker ids:", busyWorkerIds)
-  allWorkers = (data || []).map(w => ({ ...w, isBusy: busyWorkerIds.includes(w.id) }))
+    const busyWorkerIds = (activeContracts || []).map(c => c.worker_id)
+    allWorkers = (data || []).map(w => ({ ...w, isBusy: busyWorkerIds.includes(w.id) }))
   renderWorkers()
 
   document.getElementById("skillPillsRow").addEventListener("click", e => {
@@ -2847,5 +2840,7 @@ async function boot() {
 }
 
 boot()
+
+
 
 
