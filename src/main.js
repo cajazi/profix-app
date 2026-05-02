@@ -7,6 +7,13 @@ function sanitize(str) {
   return d.innerHTML
 }
 
+// XSS sanitizer - use for all user-generated content in innerHTML
+
+// XSS sanitizer - use for all user-generated content in innerHTML
+import { BiometricAuth, BiometryType } from "@aparajita/capacitor-biometric-auth"
+
+// XSS sanitizer - use for all user-generated content in innerHTML
+
 const app = document.getElementById("app")
 let currentEmail = ""
 let currentUser  = null
@@ -276,7 +283,13 @@ function showCreatePin(user) {
       "</div>" +
       "<div style='position:relative;width:100%;'>" +
       "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#128065;</button>" +
+      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#129351;</button>" +
+      "</div>" +
+      "<div style='text-align:center;margin:16px 0 4px;'>" +
+        "<button id='biometricBtn' type='button' style='background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 auto;padding:8px;'>" +
+          "<span style='font-size:48px;line-height:1;'>&#129351;</span>" +
+          "<span style='color:var(--text-muted);font-size:12px;font-weight:500;'>Use Fingerprint</span>" +
+        "</button>" +
       "</div>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Next</button>" +
@@ -289,6 +302,16 @@ function showCreatePin(user) {
     inp.type = inp.type === "password" ? "tel" : "password"
     _eye.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
   })
+  var _bioBtn = document.getElementById("biometricBtn")
+  if (_bioBtn) {
+    checkBiometricAvailable().then(function(av) { if (!av) _bioBtn.style.display = "none" })
+    _bioBtn.addEventListener("click", async function() {
+      await authenticateWithBiometric(
+        function() { showDashboard(currentUser) },
+        function() { inp.focus() }
+      )
+    })
+  }
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
     hideErr("pinErr")
@@ -330,7 +353,13 @@ function showVerifyPin(user, trustAfter) {
       "</div>" +
       "<div style='position:relative;width:100%;'>" +
       "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#128065;</button>" +
+      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#129351;</button>" +
+      "</div>" +
+      "<div style='text-align:center;margin:16px 0 4px;'>" +
+        "<button id='biometricBtn' type='button' style='background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 auto;padding:8px;'>" +
+          "<span style='font-size:48px;line-height:1;'>&#129351;</span>" +
+          "<span style='color:var(--text-muted);font-size:12px;font-weight:500;'>Use Fingerprint</span>" +
+        "</button>" +
       "</div>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
@@ -344,13 +373,23 @@ function showVerifyPin(user, trustAfter) {
     inp.type = inp.type === "password" ? "tel" : "password"
     _eye.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
   })
+  var _bioBtn = document.getElementById("biometricBtn")
+  if (_bioBtn) {
+    checkBiometricAvailable().then(function(av) { if (!av) _bioBtn.style.display = "none" })
+    _bioBtn.addEventListener("click", async function() {
+      await authenticateWithBiometric(
+        function() { showDashboard(currentUser) },
+        function() { inp.focus() }
+      )
+    })
+  }
   inp.addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("pinBtn").click() })
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
     hideErr("pinErr")
     if (val.length < 6) { showErr("pinErr","Enter your 6-digit PIN"); return }
     setBtn("pinBtn", true, "Unlock")
-    const { data: profile } = await supabase.from("profiles").select("pin_hash").eq("id", user.id).maybeSingle()
+    let { data: profile } = await supabase.from("profiles").select("pin_hash").eq("id", user.id).maybeSingle()
     if (!profile?.pin_hash) { showCreatePin(user); return }
     const hash = await sha256pin(val)
     if (hash !== profile.pin_hash) {
@@ -407,7 +446,13 @@ async function showPinLogin(email, profileId) {
       "</div>" +
       "<div style='position:relative;width:100%;'>" +
       "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#128065;</button>" +
+      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#129351;</button>" +
+      "</div>" +
+      "<div style='text-align:center;margin:16px 0 4px;'>" +
+        "<button id='biometricBtn' type='button' style='background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 auto;padding:8px;'>" +
+          "<span style='font-size:48px;line-height:1;'>&#129351;</span>" +
+          "<span style='color:var(--text-muted);font-size:12px;font-weight:500;'>Use Fingerprint</span>" +
+        "</button>" +
       "</div>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
       "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
@@ -421,6 +466,16 @@ async function showPinLogin(email, profileId) {
     inp.type = inp.type === "password" ? "tel" : "password"
     _eye.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
   })
+  var _bioBtn = document.getElementById("biometricBtn")
+  if (_bioBtn) {
+    checkBiometricAvailable().then(function(av) { if (!av) _bioBtn.style.display = "none" })
+    _bioBtn.addEventListener("click", async function() {
+      await authenticateWithBiometric(
+        function() { showDashboard(currentUser) },
+        function() { inp.focus() }
+      )
+    })
+  }
   inp.addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("pinBtn").click() })
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
@@ -591,6 +646,7 @@ function showDashboard(user) {
   document.getElementById("hamburgerBtn").addEventListener("click", openMenu)
   document.getElementById("menuNotifBtn").addEventListener("click",   () => { closeMenu(); showNotifications(user) })
   document.getElementById("menuProfileBtn").addEventListener("click", () => { closeMenu(); showProfile(user) })
+  document.getElementById("menuSettingsBtn") && document.getElementById("menuSettingsBtn").addEventListener("click", () => { closeMenu(); showSettings(user) })
   // Theme toggle
   const _tBtn = document.getElementById("menuThemeBtn")
   const _tLbl = document.getElementById("themeLabel")
@@ -643,7 +699,7 @@ function showDashboard(user) {
     }
   })
   document.getElementById("postJobBtn").addEventListener("click", async () => {
-    const { data: p } = await supabase.from("profiles").select("is_verified").eq("id", user.id).maybeSingle()
+    let { data: p } = await supabase.from("profiles").select("is_verified").eq("id", user.id).maybeSingle()
     if (!p?.is_verified) { alert("KYC Required - Complete KYC verification before posting jobs. Go to My Profile to submit documents."); return }
     showPostJob(user)
   })
@@ -693,7 +749,7 @@ async function showBrowseJobs(user) {
   app.innerHTML = "<div style='min-height:100vh;display:flex;flex-direction:column;background:var(--bg-page);'>" + navBar("Browse Jobs") + "<div style='flex:1;padding:14px 16px 32px;max-width:520px;margin:0 auto;width:100%;box-sizing:border-box;'><div style='position:relative;margin-bottom:12px;'><input id='searchInput' type='text' placeholder='Search jobs...' style='width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);color:var(--text-primary);background:var(--bg-card);font-size:15px;outline:none;box-sizing:border-box;' /></div><div style='overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:14px;padding-bottom:6px;scrollbar-width:none;'><div id='pillsRow' style='display:inline-flex;gap:7px;padding:2px 4px;'>" + pillsHtml + "</div></div><p id='jobsCountLabel' style='color:var(--text-secondary);font-size:13px;margin:0 0 12px;'>Loading jobs...</p><div id='browseList'><div style='text-align:center;padding:48px 0;'><div style='width:40px;height:40px;border:3px solid #33CE7A;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;'></div><p style='color:var(--text-secondary);font-size:14px;margin:0;'>Loading jobs...</p></div></div></div></div>"
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
   let selectedCat = "All", searchTerm = "", allJobs = []
-  const { data: jobs } = await supabase.from("jobs").select("*").eq("status","open").order("created_at",{ascending:false})
+  let { data: jobs } = await supabase.from("jobs").select("*").eq("status","open").order("created_at",{ascending:false})
   allJobs = jobs || []
   renderBrowse()
   document.getElementById("pillsRow").addEventListener("click", (e) => {
@@ -750,7 +806,7 @@ function showApplyModal(job, user) {
   app.innerHTML = "<div style='min-height:100vh;display:flex;flex-direction:column;background:var(--bg-page);'>" + navBar("Apply for Job") + "<div style='flex:1;padding:18px 16px 40px;max-width:520px;margin:0 auto;width:100%;box-sizing:border-box;'><div style='background:var(--bg-card-subtle);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:22px;'><p style='color:#fff;font-size:15px;font-weight:600;margin:0;'>" + job.title + "</p></div><div style='margin-bottom:18px;'><label style='display:block;color:var(--text-muted);font-size:14px;font-weight:600;margin-bottom:8px;'>Your proposed price (&#8358;) *</label><input id='proposedPrice' type='number' placeholder='e.g. 15000' style='width:100%;padding:13px 15px;border-radius:12px;border:1.5px solid var(--border);color:var(--text-primary);background:var(--bg-card);font-size:16px;outline:none;box-sizing:border-box;' /></div><div style='margin-bottom:18px;'><label style='display:block;color:var(--text-muted);font-size:14px;font-weight:600;margin-bottom:8px;'>Cover note *</label><textarea id='coverNote' placeholder='Introduce yourself...' rows='5' maxlength='500' style='width:100%;padding:13px 15px;border-radius:12px;border:1.5px solid var(--border);color:var(--text-primary);background:var(--bg-card);font-size:15px;outline:none;box-sizing:border-box;resize:none;line-height:1.6;'></textarea></div><div style='margin-bottom:26px;'><label style='display:block;color:var(--text-muted);font-size:14px;font-weight:600;margin-bottom:8px;'>Available to start</label><select id='availability' style='width:100%;padding:13px 15px;border-radius:12px;border:1.5px solid var(--border);color:var(--text-primary);background:var(--bg-card);font-size:15px;outline:none;box-sizing:border-box;min-height:48px;'><option value='immediately'>Immediately</option><option value='within_24h'>Within 24 hours</option><option value='within_3days'>Within 3 days</option><option value='this_week'>This week</option><option value='next_week'>Next week</option></select></div><p id='applyErr' style='color:#f87171;font-size:13px;margin:0 0 14px;display:none;background:rgba(239,68,68,0.1);padding:12px;border-radius:10px;'></p><button id='submitApplyBtn' style='width:100%;padding:15px;background:#00C259;color:#fff;font-size:15px;font-weight:700;border:none;border-radius:14px;cursor:pointer;min-height:52px;'>Submit Application</button></div></div>"
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
   document.getElementById("submitApplyBtn").addEventListener("click", async () => {
-    const { data: p } = await supabase.from("profiles").select("is_verified").eq("id", user.id).single()
+    let { data: p } = await supabase.from("profiles").select("is_verified").eq("id", user.id).single()
     if (!p?.is_verified) { alert("KYC Required - Complete KYC verification before applying for jobs. Go to My Profile to submit documents."); return }
     const price = parseInt(document.getElementById("proposedPrice").value) || 0
     const note  = document.getElementById("coverNote").value.trim()
@@ -891,7 +947,7 @@ async function getOrCreateRoomAsOwner(user, job, workerEmail, workerId) {
 }
 
 async function getOrCreateChatRoom(user, job) {
-  const { data: existing } = await supabase.from("chat_rooms").select("id").eq("job_id",job.id).eq("worker_id",user.id).maybeSingle()
+  let { data: existing } = await supabase.from("chat_rooms").select("id").eq("job_id",job.id).eq("worker_id",user.id).maybeSingle()
   if (existing) return existing.id
   const { data: newRoom, error } = await supabase.from("chat_rooms").insert({ job_id:job.id, owner_id:job.owner_id, worker_id:user.id, owner_email:job.owner_email||"", worker_email:user.email, job_title:job.title }).select("id").single()
   if (error) { return null }
@@ -1886,6 +1942,40 @@ async function showWallet(user) {
     })
   }
 
+  var toggleBalBtn = document.getElementById("toggleBalance")
+  if (toggleBalBtn) {
+    toggleBalBtn.addEventListener("click", function() {
+      var display = document.getElementById("balanceDisplay")
+      var visible = toggleBalBtn.dataset.visible === "true"
+      var amt = Number(toggleBalBtn.dataset.amount)
+      if (visible) {
+        display.innerHTML = "&#8358;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"
+        toggleBalBtn.dataset.visible = "false"
+        toggleBalBtn.querySelector("span").innerHTML = "&#128065;"
+      } else {
+        display.innerHTML = "&#8358;" + amt.toLocaleString()
+        toggleBalBtn.dataset.visible = "true"
+        toggleBalBtn.querySelector("span").innerHTML = "&#128683;"
+      }
+    })
+  }
+  var toggleBalBtn = document.getElementById("toggleBalance")
+  if (toggleBalBtn) {
+    toggleBalBtn.addEventListener("click", function() {
+      var display = document.getElementById("balanceDisplay")
+      var visible = toggleBalBtn.dataset.visible === "true"
+      var amt = Number(toggleBalBtn.dataset.amount)
+      if (visible) {
+        display.innerHTML = "&#8358;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;"
+        toggleBalBtn.dataset.visible = "false"
+        toggleBalBtn.querySelector("span").innerHTML = "&#128065;"
+      } else {
+        display.innerHTML = "&#8358;" + amt.toLocaleString()
+        toggleBalBtn.dataset.visible = "true"
+        toggleBalBtn.querySelector("span").innerHTML = "&#128683;"
+      }
+    })
+  }
   const withdrawBtn = document.getElementById("withdrawBtn")
   if (withdrawBtn) {
     withdrawBtn.addEventListener("click", () => {
@@ -2676,7 +2766,7 @@ async function loadAdminTab(tab) {
 }
 
 async function checkWithdrawalPin(user, onSuccess) {
-  const { data: profile } = await supabase.from("profiles").select("withdrawal_pin_hash").eq("id", user.id).single()
+  let { data: profile } = await supabase.from("profiles").select("withdrawal_pin_hash").eq("id", user.id).single()
   if (!profile?.withdrawal_pin_hash) {
     showSetWithdrawalPin(user, onSuccess)
   } else {
@@ -2769,9 +2859,43 @@ function showVerifyWithdrawalPin(user, storedPin, onSuccess) {
 }
 
 // â”€â”€ PRIVACY POLICY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+async function checkBiometricAvailable() {
+  try {
+    const info = await BiometricAuth.checkBiometry()
+    return info.isAvailable
+  } catch(e) {
+    return false
+  }
+}
+
+async function authenticateWithBiometric(onSuccess, onFallback) {
+  try {
+    await BiometricAuth.authenticate({
+      reason: "Verify your identity to access ProFix",
+      cancelTitle: "Use PIN instead",
+      allowDeviceCredential: false,
+      iosFallbackTitle: "Use PIN",
+      androidTitle: "ProFix Biometric Login",
+      androidSubtitle: "Use your fingerprint or face to login",
+      androidConfirmationRequired: false,
+    })
+    onSuccess()
+  } catch(e) {
+    // User cancelled or biometric failed - fallback to PIN
+    onFallback()
+  }
+}
+
+async function saveBiometricPreference(userId, enabled) {
+  localStorage.setItem("profix_biometric_" + userId, enabled ? "1" : "0")
+}
+
+function isBiometricEnabled(userId) {
+  return localStorage.getItem("profix_biometric_" + userId) === "1"
+}
+
+// ── PRIVACY POLICY ───────────────────────────────────────────────
 function showPrivacyPolicy() {
-  window.open("https://cajazi.github.io/profix-app/privacy-policy.html", "_blank")
-  return
   pushScreen("privacy", () => showPrivacyPolicy())
   function legalSection(title, body) {
     return "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm);'>" +
@@ -2795,7 +2919,7 @@ function showPrivacyPolicy() {
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
 }
 
-// â”€â”€ TERMS OF SERVICE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── TERMS OF SERVICE ─────────────────────────────────────────────
 function showTermsOfService() {
   pushScreen("terms", () => showTermsOfService())
   function legalSection(title, body) {
@@ -2822,6 +2946,185 @@ function showTermsOfService() {
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
 }
 
+function showSettings(user) {
+  pushScreen("settings", () => showSettings(user))
+  var currentTheme = localStorage.getItem("profix_theme") || "system"
+  function themeBtn(id, label, icon, active) {
+    return "<button id='" + id + "' style='flex:1;padding:12px 8px;border-radius:12px;border:2px solid " + (active?"var(--primary)":"var(--border)") + ";background:" + (active?"rgba(0,194,89,0.10)":"transparent") + ";color:" + (active?"var(--primary)":"var(--text-secondary)") + ";font-size:13px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;'><span style='font-size:22px;'>" + icon + "</span>" + label + "</button>"
+  }
+  app.innerHTML =
+    "<div style='min-height:100vh;display:flex;flex-direction:column;background:var(--bg-page);'>" +
+    navBar("Settings") +
+    "<div style='flex:1;padding:16px 16px 40px;max-width:520px;margin:0 auto;width:100%;box-sizing:border-box;'>" +
+      "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm);'>" +
+        "<p style='color:var(--text-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 14px;'>Appearance</p>" +
+        "<div style='display:flex;gap:8px;'>" +
+          themeBtn("themeLight","Light","&#9728;",currentTheme==="light") +
+          themeBtn("themeDark","Dark","&#127769;",currentTheme==="dark") +
+          themeBtn("themeSystem","System","&#10040;",currentTheme==="system") +
+        "</div>" +
+      "</div>" +
+      "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm);'>" +
+        "<p style='color:var(--text-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 14px;'>Biometric Login</p>" +
+        "<div style='display:flex;align-items:center;justify-content:space-between;padding:4px 0;'>" +
+          "<div style='display:flex;align-items:center;gap:12px;'>" +
+            "<div style='width:38px;height:38px;background:rgba(0,194,89,0.10);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'><span style='font-size:18px;'>&#128070;</span></div>" +
+            "<div><p style='color:var(--text-primary);font-size:14px;font-weight:600;margin:0 0 2px;'>Fingerprint / Face ID</p><p style='color:var(--text-muted);font-size:12px;margin:0;'>Use biometrics to login faster</p></div>" +
+          "</div>" +
+          "<label style='position:relative;display:inline-block;width:50px;height:26px;flex-shrink:0;'>" +
+            "<input type='checkbox' id='biometricToggle' style='opacity:0;width:0;height:0;' />" +
+            "<span id='biometricSlider' style='position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border);border-radius:26px;transition:0.3s;'></span>" +
+          "</label>" +
+        "</div>" +
+      "</div>" +
+      "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm);'>" +
+        "<p style='color:var(--text-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 14px;'>Legal</p>" +
+        "<button id='privacyBtn' style='width:100%;display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg-card-subtle);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:10px;'>" +
+          "<div style='width:38px;height:38px;background:rgba(0,194,89,0.10);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'><span style='font-size:18px;'>&#128196;</span></div>" +
+          "<div style='flex:1;text-align:left;'><p style='color:var(--text-primary);font-size:14px;font-weight:600;margin:0 0 2px;'>Privacy Policy</p><p style='color:var(--text-muted);font-size:12px;margin:0;'>How we handle your data</p></div>" +
+          "<span style='color:var(--text-muted);font-size:18px;'>&#8250;</span>" +
+        "</button>" +
+        "<button id='termsBtn' style='width:100%;display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg-card-subtle);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;'>" +
+          "<div style='width:38px;height:38px;background:rgba(0,194,89,0.10);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'><span style='font-size:18px;'>&#128221;</span></div>" +
+          "<div style='flex:1;text-align:left;'><p style='color:var(--text-primary);font-size:14px;font-weight:600;margin:0 0 2px;'>Terms of Service</p><p style='color:var(--text-muted);font-size:12px;margin:0;'>Rules for using ProFix</p></div>" +
+          "<span style='color:var(--text-muted);font-size:18px;'>&#8250;</span>" +
+        "</button>" +
+      "</div>" +
+      "<div style='background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm);'>" +
+        "<p style='color:var(--text-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 14px;'>Security</p>" +
+        "<button id='changeLoginPinBtn' style='width:100%;display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg-card-subtle);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:10px;'>" +
+          "<div style='width:38px;height:38px;background:rgba(0,194,89,0.10);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'><span style='font-size:18px;'>&#128273;</span></div>" +
+          "<div style='flex:1;text-align:left;'><p style='color:var(--text-primary);font-size:14px;font-weight:600;margin:0 0 2px;'>Change Login PIN</p><p style='color:var(--text-muted);font-size:12px;margin:0;'>Update your 6-digit login PIN</p></div>" +
+          "<span style='color:var(--text-muted);font-size:18px;'>&#8250;</span>" +
+        "</button>" +
+        "<button id='changeWithdrawPinBtn' style='width:100%;display:flex;align-items:center;gap:14px;padding:14px;background:var(--bg-card-subtle);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;'>" +
+          "<div style='width:38px;height:38px;background:rgba(0,194,89,0.10);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'><span style='font-size:18px;'>&#128184;</span></div>" +
+          "<div style='flex:1;text-align:left;'><p style='color:var(--text-primary);font-size:14px;font-weight:600;margin:0 0 2px;'>Change Withdrawal PIN</p><p style='color:var(--text-muted);font-size:12px;margin:0;'>Update your 4-digit withdrawal PIN</p></div>" +
+          "<span style='color:var(--text-muted);font-size:18px;'>&#8250;</span>" +
+        "</button>" +
+      "</div>" +
+      "<div style='background:var(--bg-card);border:1.5px solid rgba(224,49,49,0.3);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow-sm);'>" +
+        "<p style='color:var(--text-muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 14px;'>Danger Zone</p>" +
+        "<button id='deleteAccountBtn' style='width:100%;display:flex;align-items:center;gap:14px;padding:14px;background:rgba(224,49,49,0.07);border:1.5px solid rgba(224,49,49,0.2);border-radius:12px;cursor:pointer;'>" +
+          "<div style='width:38px;height:38px;background:rgba(224,49,49,0.10);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'><span style='font-size:18px;'>&#128465;</span></div>" +
+          "<div style='flex:1;text-align:left;'><p style='color:var(--danger);font-size:14px;font-weight:600;margin:0 0 2px;'>Delete Account</p><p style='color:var(--text-muted);font-size:12px;margin:0;'>Permanently delete your account and data</p></div>" +
+          "<span style='color:var(--danger);font-size:18px;'>&#8250;</span>" +
+        "</button>" +
+      "</div>" +
+    "</div></div>"
+
+  document.getElementById("backBtn").addEventListener("click", () => popScreen())
+
+  // Theme buttons
+  function applyThemeLocal(theme) {
+    localStorage.setItem("profix_theme", theme)
+    var root = document.documentElement
+    root.setAttribute("data-theme", theme === "system" ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : theme)
+    showSettings(user)
+  }
+  document.getElementById("themeLight").addEventListener("click", () => applyThemeLocal("light"))
+  document.getElementById("themeDark").addEventListener("click",  () => applyThemeLocal("dark"))
+  document.getElementById("themeSystem").addEventListener("click",() => applyThemeLocal("system"))
+
+  // Legal
+  document.getElementById("privacyBtn").addEventListener("click", () => showPrivacyPolicy())
+  document.getElementById("termsBtn").addEventListener("click",   () => showTermsOfService())
+
+  // Security
+  document.getElementById("changeLoginPinBtn").addEventListener("click",   () => showChangeLoginPin(user))
+  document.getElementById("changeWithdrawPinBtn").addEventListener("click", () => showSetWithdrawalPin(user, () => { alert("Withdrawal PIN updated!"); showSettings(user) }))
+
+  // Biometric toggle
+  var bioToggle = document.getElementById("biometricToggle")
+  var bioSlider = document.getElementById("biometricSlider")
+  if (bioToggle) {
+    var bioEnabled = isBiometricEnabled(user.id)
+    bioToggle.checked = bioEnabled
+    bioSlider.style.background = bioEnabled ? "var(--primary)" : "var(--border)"
+    bioToggle.addEventListener("change", async function() {
+      var available = await checkBiometricAvailable()
+      if (!available) { alert("Biometric authentication is not available on this device."); bioToggle.checked = false; return }
+      if (bioToggle.checked) {
+        await authenticateWithBiometric(
+          async function() { await saveBiometricPreference(user.id, true); bioSlider.style.background = "var(--primary)"; alert("Biometric login enabled!") },
+          function() { bioToggle.checked = false; bioSlider.style.background = "var(--border)" }
+        )
+      } else {
+        await saveBiometricPreference(user.id, false)
+        bioSlider.style.background = "var(--border)"
+        alert("Biometric login disabled.")
+      }
+    })
+  }
+
+  // Delete account
+  document.getElementById("deleteAccountBtn").addEventListener("click", async () => {
+    if (!confirm("Delete your account? This cannot be undone.")) return
+    if (!confirm("All your data will be permanently deleted. Continue?")) return
+    try {
+      await supabase.from("wallet_transactions").delete().eq("user_id", user.id)
+      await supabase.from("wallets").delete().eq("user_id", user.id)
+      await supabase.from("withdrawal_requests").delete().eq("user_id", user.id)
+      await supabase.from("notifications").delete().eq("user_id", user.id)
+      await supabase.from("profiles").delete().eq("id", user.id)
+      await supabase.auth.signOut()
+      localStorage.clear()
+      sessionStorage.clear()
+      alert("Account deleted successfully.")
+      showLogin()
+    } catch(e) { alert("Failed: " + e.message) }
+  })
+}
+
+function showChangeLoginPin(user) {
+  pushScreen("changeLoginPin", () => showChangeLoginPin(user))
+  var step = 1, newPin = ""
+  function render(title, sub, btnText) {
+    app.innerHTML =
+      "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
+      "<div style='width:100%;max-width:400px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
+        "<div style='text-align:center;margin-bottom:22px;'>" +
+          "<div style='width:64px;height:64px;background:rgba(0,194,89,0.10);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;border:2px solid rgba(0,194,89,0.25);'><span style='font-size:28px;'>&#128273;</span></div>" +
+          "<h2 style='color:var(--text-primary);font-size:20px;font-weight:700;margin:0 0 8px;'>" + title + "</h2>" +
+          "<p style='color:var(--text-secondary);font-size:13px;margin:0;'>" + sub + "</p>" +
+        "</div>" +
+        "<div style='position:relative;width:100%;margin-bottom:8px;'>" +
+          "<input id='clpInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid var(--border);color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
+          "<button id='clpEye' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:20px;color:var(--text-muted);padding:4px;'>&#128065;</button>" +
+        "</div>" +
+        "<p id='clpErr' style='color:var(--danger);font-size:13px;margin:0 0 14px;display:none;'></p>" +
+        "<button id='clpBtn' style='width:100%;padding:14px;background:var(--primary);color:#FFFFFF;font-size:15px;font-weight:700;border:none;border-radius:12px;cursor:pointer;min-height:50px;box-shadow:var(--shadow-green);'>" + btnText + "</button>" +
+        "<button id='clpBack' style='width:100%;padding:12px;background:none;color:var(--text-muted);font-size:13px;border:none;cursor:pointer;margin-top:8px;'>Cancel</button>" +
+      "</div></div>"
+    var inp = document.getElementById("clpInput")
+    var eye = document.getElementById("clpEye")
+    var err = document.getElementById("clpErr")
+    inp.focus()
+    inp.addEventListener("input", () => { inp.value = inp.value.replace(/D/g,"").slice(0,6) })
+    eye.addEventListener("click", function() { inp.type = inp.type==="password"?"tel":"password"; eye.innerHTML=inp.type==="password"?"&#128065;":"&#128683;" })
+    document.getElementById("clpBack").addEventListener("click", () => popScreen())
+    document.getElementById("clpBtn").addEventListener("click", async function() {
+      var val = inp.value.trim()
+      err.style.display = "none"
+      if (val.length < 6) { err.textContent = "PIN must be 6 digits"; err.style.display = "block"; return }
+      if (step === 1) {
+        newPin = val; step = 2
+        render("Confirm New PIN", "Enter your new PIN again to confirm", "Save PIN")
+      } else {
+        if (val !== newPin) { err.textContent = "PINs do not match. Try again."; err.style.display = "block"; inp.value = ""; return }
+        document.getElementById("clpBtn").disabled = true
+        document.getElementById("clpBtn").textContent = "Saving..."
+        var hash = await sha256pin(val)
+        await supabase.from("profiles").update({ pin_hash: hash, pin_set: true }).eq("id", user.id)
+        localStorage.setItem("profix_hash_" + user.email, hash)
+        alert("Login PIN updated successfully!")
+        popScreen()
+      }
+    })
+  }
+  render("New Login PIN", "Enter a new 6-digit PIN", "Next")
+}
+
 async function boot() {
   initTheme()
   setupAndroidBack()
@@ -2832,7 +3135,17 @@ async function boot() {
     currentUser  = session.user
     const savedHash = localStorage.getItem("profix_hash_" + session.user.email)
     if (savedHash) {
-      showVerifyPin(session.user, false)
+      // Check if biometric is enabled for this user
+      const biometricEnabled = isBiometricEnabled(session.user.id)
+      const biometricAvailable = await checkBiometricAvailable()
+      if (biometricEnabled && biometricAvailable) {
+        await authenticateWithBiometric(
+          () => showDashboard(session.user), // success
+          () => showVerifyPin(session.user, false) // fallback to PIN
+        )
+      } else {
+        showVerifyPin(session.user, false)
+      }
     } else {
       showDashboard(session.user)
     }
