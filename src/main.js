@@ -173,54 +173,183 @@ function showLogin() {
   app.innerHTML =
     "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
     "<div style='text-align:center;margin-bottom:28px;'>" +
-      "<div style='display:inline-flex;align-items:center;justify-content:center;width:76px;height:76px;background:#00C259;border-radius:22px;margin-bottom:14px;box-shadow:var(--shadow-green);'><span style='font-size:34px;'>&#128295;</span></div>" +
+      "<div style='display:inline-flex;align-items:center;justify-content:center;width:76px;height:76px;background:#00C259;border-radius:22px;margin-bottom:14px;box-shadow:var(--shadow-green);'>" +
+        "<span style='font-size:34px;'>&#128295;</span>" +
+      "</div>" +
       "<h1 style='color:#fff;font-size:34px;font-weight:800;margin:0;letter-spacing:-1px;'>ProFix</h1>" +
       "<p style='color:var(--text-secondary);font-size:14px;margin:4px 0 0;'>Home services marketplace</p>" +
     "</div>" +
     "<div style='width:100%;max-width:400px;background:var(--bg-card);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
-      "<h2 style='color:var(--text-primary);font-size:22px;font-weight:700;margin:0 0 4px;'>Welcome</h2>" +
-      "<p style='color:var(--text-secondary);font-size:14px;margin:0 0 22px;'>Sign in or create your account</p>" +
+      "<h2 style='color:var(--text-primary);font-size:22px;font-weight:700;margin:0 0 4px;'>Welcome back</h2>" +
+      "<p style='color:var(--text-secondary);font-size:14px;margin:0 0 22px;'>Sign in to your ProFix account</p>" +
       "<label style='display:block;color:var(--text-primary);font-size:13px;font-weight:600;margin-bottom:7px;'>Email address</label>" +
-      "<input id='emailInput' type='email' inputmode='email' autocomplete='email' placeholder='you@example.com' style='width:100%;padding:13px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:16px;outline:none;box-sizing:border-box;' />" +
+      "<input id='emailInput' type='email' inputmode='email' autocomplete='email' placeholder='you@example.com' style='width:100%;padding:13px 15px;border-radius:12px;border:2px solid var(--border);color:var(--text-primary);background:var(--bg-input);font-size:16px;outline:none;box-sizing:border-box;' />" +
       "<p id='loginErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
-      "<button id='continueBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Continue</button>" +
-      "<p style='text-align:center;color:var(--text-secondary);font-size:13px;margin:16px 0 0;'>New to ProFix? <span id='createLink' style='color:var(--primary);font-weight:600;cursor:pointer;'>Create account</span></p>" +
+      "<button id='continueBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;min-height:50px;'>Continue</button>" +
+      "<div style='display:flex;align-items:center;gap:12px;margin:20px 0;'>" +
+        "<div style='flex:1;height:1px;background:var(--border);'></div>" +
+        "<span style='color:var(--text-muted);font-size:12px;font-weight:500;'>NEW TO PROFIX?</span>" +
+        "<div style='flex:1;height:1px;background:var(--border);'></div>" +
+      "</div>" +
+      "<button id='createAccountBtn' style='width:100%;padding:14px;background:transparent;color:var(--primary);font-size:16px;font-weight:700;border:2px solid var(--primary);border-radius:12px;cursor:pointer;min-height:50px;'>Create Account</button>" +
     "</div></div>"
 
-  const btn = document.getElementById("continueBtn")
+  const btn   = document.getElementById("continueBtn")
   const input = document.getElementById("emailInput")
   input.focus()
   input.addEventListener("keydown", e => { if (e.key === "Enter") btn.click() })
-  document.getElementById("createLink").addEventListener("click", () => { input.focus(); input.placeholder = "Enter your email to get started" })
+  document.getElementById("createAccountBtn").addEventListener("click", () => showRoleSelect())
 
   btn.addEventListener("click", async () => {
-    const email = input.value.trim()
+    const email = input.value.trim().toLowerCase()
     hideErr("loginErr")
-    if (!email) { showErr("loginErr","Please enter your email address"); return }
-    if (!email.includes("@") || email.split("@")[1]?.indexOf(".") === -1) { showErr("loginErr","Please enter a valid email address"); return }
-    setBtn("continueBtn", true, "Continue")
-    // Check local storage for trusted device + saved profile
+    if (!email) { showErr("loginErr", "Please enter your email address"); return }
+    const emailRegex = /^[^s@]+@[^s@]+.[^s@]+$/
+    if (!emailRegex.test(email)) { showErr("loginErr", "Please enter a valid email address"); return }
+
+    setBtn("continueBtn", true, "Checking...")
+
+    // ── STEP 1: DEVICE RECOGNITION ──────────────────────────────
+    const deviceId     = getDeviceId()
     const savedProfile = JSON.parse(localStorage.getItem("profix_profile_" + email) || "null")
-    if (savedProfile && savedProfile.profileId && savedProfile.pinSet) {
-      const deviceId = getDeviceId()
-      const trustedEmails = JSON.parse(localStorage.getItem("profix_trusted_" + deviceId) || "[]")
-      if (trustedEmails.includes(email)) {
-        setBtn("continueBtn", false, "Continue")
-        currentEmail = email
-        showPinLogin(email, savedProfile.profileId)
-        return
-      }
+    const trustedList  = JSON.parse(localStorage.getItem("profix_trusted_" + deviceId) || "[]")
+
+    if (savedProfile && savedProfile.profileId && savedProfile.pinSet && trustedList.includes(email)) {
+      currentEmail = email
+      setBtn("continueBtn", false, "Continue")
+      showPinLogin(email, savedProfile.profileId)
+      return
     }
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
+
+    // ── STEP 2: CHECK IF EMAIL HAS AN ACCOUNT ───────────────────
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id, email, pin_hash")
+      .eq("email", email)
+      .maybeSingle()
+
+    if (!existingProfile) {
+      setBtn("continueBtn", false, "Continue")
+      showErr("loginErr", "No account found with this email. Please create an account.")
+      return
+    }
+
+    // ── STEP 3: SEND OTP ─────────────────────────────────────────
+    setBtn("continueBtn", true, "Sending code...")
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
     if (error) { setBtn("continueBtn", false, "Continue"); showErr("loginErr", error.message); return }
     currentEmail = email
-    // Check if existing user by trying to get profile (may fail if RLS blocks, that is fine)
-    const { data: profile } = await supabase.from("profiles").select("pin_hash,pin_set").eq("email", email).maybeSingle()
-    const mode = profile?.pin_hash ? "existing" : "new"
     setBtn("continueBtn", false, "Continue")
-    showOTP(mode)
+    showOTP("existing")
   })
 }
+
+// ── ROLE SELECTION (Create Account) ──────────────────────────────
+function showRoleSelect() {
+  pushScreen("roleSelect", () => showRoleSelect())
+  app.innerHTML =
+    "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
+    "<div style='text-align:center;margin-bottom:32px;'>" +
+      "<div style='display:inline-flex;align-items:center;justify-content:center;width:76px;height:76px;background:#00C259;border-radius:22px;margin-bottom:14px;box-shadow:var(--shadow-green);'>" +
+        "<span style='font-size:34px;'>&#128295;</span>" +
+      "</div>" +
+      "<h1 style='color:#fff;font-size:28px;font-weight:800;margin:0;'>Join ProFix</h1>" +
+      "<p style='color:var(--text-secondary);font-size:14px;margin:6px 0 0;'>How do you want to use ProFix?</p>" +
+    "</div>" +
+    "<div style='width:100%;max-width:400px;'>" +
+      "<button id='roleOwnerBtn' style='width:100%;background:var(--bg-card);border:2px solid var(--border);border-radius:20px;padding:22px;margin-bottom:14px;cursor:pointer;text-align:left;box-shadow:var(--shadow-sm);'>" +
+        "<div style='display:flex;align-items:center;gap:16px;'>" +
+          "<div style='width:56px;height:56px;background:rgba(0,194,89,0.10);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(0,194,89,0.25);'>" +
+            "<span style='font-size:28px;'>&#127968;</span>" +
+          "</div>" +
+          "<div style='flex:1;'>" +
+            "<p style='color:var(--text-primary);font-size:17px;font-weight:700;margin:0 0 4px;'>I need services</p>" +
+            "<p style='color:var(--text-secondary);font-size:13px;margin:0;'>Post jobs, hire verified professionals</p>" +
+          "</div>" +
+          "<span style='color:var(--primary);font-size:26px;font-weight:300;'>&#8250;</span>" +
+        "</div>" +
+      "</button>" +
+      "<button id='roleWorkerBtn' style='width:100%;background:var(--bg-card);border:2px solid var(--border);border-radius:20px;padding:22px;margin-bottom:28px;cursor:pointer;text-align:left;box-shadow:var(--shadow-sm);'>" +
+        "<div style='display:flex;align-items:center;gap:16px;'>" +
+          "<div style='width:56px;height:56px;background:rgba(59,130,246,0.10);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(59,130,246,0.2);'>" +
+            "<span style='font-size:28px;'>&#128296;</span>" +
+          "</div>" +
+          "<div style='flex:1;'>" +
+            "<p style='color:var(--text-primary);font-size:17px;font-weight:700;margin:0 0 4px;'>I offer services</p>" +
+            "<p style='color:var(--text-secondary);font-size:13px;margin:0;'>Find jobs, earn money with your skills</p>" +
+          "</div>" +
+          "<span style='color:var(--primary);font-size:26px;font-weight:300;'>&#8250;</span>" +
+        "</div>" +
+      "</button>" +
+      "<p style='text-align:center;color:var(--text-secondary);font-size:14px;'>" +
+        "Already have an account? " +
+        "<span id='signInLink' style='color:var(--primary);font-weight:600;cursor:pointer;'>Sign in</span>" +
+      "</p>" +
+    "</div></div>"
+
+  document.getElementById("signInLink").addEventListener("click", () => popScreen())
+  document.getElementById("roleOwnerBtn").addEventListener("click", () => showRegister("owner"))
+  document.getElementById("roleWorkerBtn").addEventListener("click", () => showRegister("worker"))
+}
+
+function showRegister(role) {
+  pushScreen("register", () => showRegister(role))
+  const roleLabel = role === "owner" ? "Home Owner" : "Service Professional"
+  const roleIcon  = role === "owner" ? "&#127968;" : "&#128296;"
+  const roleBg    = role === "owner" ? "rgba(0,194,89,0.10)" : "rgba(59,130,246,0.10)"
+  const roleBorder= role === "owner" ? "rgba(0,194,89,0.25)" : "rgba(59,130,246,0.2)"
+
+  app.innerHTML =
+    "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
+    "<div style='width:100%;max-width:400px;background:var(--bg-card);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
+      "<div style='text-align:center;margin-bottom:22px;'>" +
+        "<div style='width:72px;height:72px;background:" + roleBg + ";border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;border:2px solid " + roleBorder + ";'>" +
+          "<span style='font-size:32px;'>" + roleIcon + "</span>" +
+        "</div>" +
+        "<h2 style='color:var(--text-primary);font-size:22px;font-weight:700;margin:0 0 6px;'>Create Account</h2>" +
+        "<p style='color:var(--text-secondary);font-size:13px;margin:0;'>Joining as <strong style='color:var(--primary);'>" + roleLabel + "</strong></p>" +
+      "</div>" +
+      "<label style='display:block;color:var(--text-primary);font-size:13px;font-weight:600;margin-bottom:7px;'>Email address</label>" +
+      "<input id='regEmail' type='email' inputmode='email' autocomplete='email' placeholder='you@example.com' style='width:100%;padding:13px 15px;border-radius:12px;border:2px solid var(--border);color:var(--text-primary);background:var(--bg-input);font-size:16px;outline:none;box-sizing:border-box;' />" +
+      "<p id='regErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
+      "<button id='regBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;min-height:50px;'>Get Started</button>" +
+      "<button id='regBackBtn' style='width:100%;margin-top:10px;padding:12px;background:none;color:var(--text-muted);font-size:14px;border:none;cursor:pointer;'>&#8592; Back</button>" +
+    "</div></div>"
+
+  const regInput = document.getElementById("regEmail")
+  regInput.focus()
+
+  document.getElementById("regBackBtn").addEventListener("click", () => popScreen())
+
+  document.getElementById("regBtn").addEventListener("click", async () => {
+    const email = regInput.value.trim().toLowerCase()
+    const errEl = document.getElementById("regErr")
+    errEl.style.display = "none"
+    if (!email) { errEl.textContent = "Please enter your email"; errEl.style.display = "block"; return }
+    const emailRegex = /^[^s@]+@[^s@]+.[^s@]+$/
+    if (!emailRegex.test(email)) { errEl.textContent = "Please enter a valid email address"; errEl.style.display = "block"; return }
+
+    setBtn("regBtn", true, "Checking...")
+
+    // Check if email already has an account
+    const { data: existing } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle()
+    if (existing) {
+      setBtn("regBtn", false, "Get Started")
+      errEl.textContent = "An account with this email already exists. Please sign in."
+      errEl.style.display = "block"
+      return
+    }
+
+    setBtn("regBtn", true, "Sending code...")
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
+    if (error) { setBtn("regBtn", false, "Get Started"); errEl.textContent = error.message; errEl.style.display = "block"; return }
+    currentEmail = email
+    sessionStorage.setItem("profix_reg_role", role)
+    setBtn("regBtn", false, "Get Started")
+    showOTP("new")
+  })
+}
+
 
 // â”€â”€ OTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function showOTP(mode) {
@@ -260,7 +389,11 @@ function showOTP(mode) {
     const { data, error } = await supabase.auth.verifyOtp({ email: currentEmail, token, type: "email" })
     if (error) { setBtn("verifyBtn", false, "Verify Code"); showErr("otpErr","Incorrect code. Try again."); return }
     currentUser = data?.user
-    if (currentUser) await supabase.from("profiles").upsert({ id: currentUser.id, email: currentUser.email }, { onConflict: "id" })
+    if (currentUser) {
+      const regRole = sessionStorage.getItem("profix_reg_role") || "owner"
+      sessionStorage.removeItem("profix_reg_role")
+      await supabase.from("profiles").upsert({ id: currentUser.id, email: currentUser.email, role: regRole }, { onConflict: "id" })
+    }
     const { data: freshProfile } = await supabase.from("profiles").select("pin_hash,pin_set").eq("id", currentUser.id).single()
     if (freshProfile?.pin_hash) {
       showVerifyPin(currentUser, true)
@@ -687,7 +820,19 @@ function showDashboard(user) {
     }
   })()
   document.getElementById("menuSignOutBtn").addEventListener("click", async () => {
-    closeMenu(); sessionStorage.removeItem("profix_pin_ok"); currentEmail = ""; currentUser = null; showLogin()
+    closeMenu()
+    await supabase.auth.signOut()
+    sessionStorage.clear()
+    // Keep profix_device_id, profix_profile_*, profix_trusted_* for device recognition
+    // Only clear auth session data
+    if (currentEmail) {
+      localStorage.removeItem("profix_hash_" + currentEmail)
+      localStorage.removeItem("profix_rt_" + currentEmail)
+    }
+    currentEmail = ""
+    currentUser = null
+    backStack = []
+    showLogin()
   })
   document.getElementById("notifBtn").addEventListener("click", () => showNotifications(user))
   // Load escrow total from active contracts
@@ -3135,13 +3280,12 @@ async function boot() {
     currentUser  = session.user
     const savedHash = localStorage.getItem("profix_hash_" + session.user.email)
     if (savedHash) {
-      // Check if biometric is enabled for this user
       const biometricEnabled = isBiometricEnabled(session.user.id)
       const biometricAvailable = await checkBiometricAvailable()
       if (biometricEnabled && biometricAvailable) {
         await authenticateWithBiometric(
-          () => showDashboard(session.user), // success
-          () => showVerifyPin(session.user, false) // fallback to PIN
+          () => showDashboard(session.user),
+          () => showVerifyPin(session.user, false)
         )
       } else {
         showVerifyPin(session.user, false)
@@ -3150,6 +3294,11 @@ async function boot() {
       showDashboard(session.user)
     }
   } else {
+    // No session - clear any stale data
+    Object.keys(localStorage).forEach(function(key) {
+      if (key.startsWith("profix_")) localStorage.removeItem(key)
+    })
+    sessionStorage.clear()
     showLogin()
   }
 }
