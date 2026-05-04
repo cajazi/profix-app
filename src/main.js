@@ -204,8 +204,7 @@ function showLogin() {
     const email = input.value.trim().toLowerCase()
     hideErr("loginErr")
     if (!email) { showErr("loginErr", "Please enter your email address"); return }
-    const emailRegex = /^[^s@]+@[^s@]+.[^s@]+$/
-    if (!emailRegex.test(email)) { showErr("loginErr", "Please enter a valid email address"); return }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
     setBtn("continueBtn", true, "Checking...")
 
@@ -221,14 +220,22 @@ function showLogin() {
       return
     }
 
-    // ── STEP 2: CHECK IF EMAIL HAS AN ACCOUNT ───────────────────
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id, email, pin_hash")
-      .eq("email", email)
-      .maybeSingle()
-
-    if (!existingProfile) {
+    // ── STEP 2: CHECK IF ACCOUNT EXISTS ─────────────────────
+    let emailExists = false
+    try {
+      const _r = await fetch("https://kufcdoexwufttxhsxhui.supabase.co/functions/v1/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + import.meta.env.VITE_SUPABASE_ANON_KEY },
+        body: JSON.stringify({ email })
+      })
+      const _d = await _r.json()
+      emailExists = _d.exists === true
+    } catch(fetchErr) {
+      setBtn("continueBtn", false, "Continue")
+      showErr("loginErr", "Connection error. Please try again.")
+      return
+    }
+    if (!emailExists) {
       setBtn("continueBtn", false, "Continue")
       showErr("loginErr", "No account found with this email. Please create an account.")
       return
@@ -326,8 +333,6 @@ function showRegister(role) {
     const errEl = document.getElementById("regErr")
     errEl.style.display = "none"
     if (!email) { errEl.textContent = "Please enter your email"; errEl.style.display = "block"; return }
-    const emailRegex = /^[^s@]+@[^s@]+.[^s@]+$/
-    if (!emailRegex.test(email)) { errEl.textContent = "Please enter a valid email address"; errEl.style.display = "block"; return }
 
     setBtn("regBtn", true, "Checking...")
 
