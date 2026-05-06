@@ -5,3 +5,6 @@ dist/
 *.local
 android/
 .DS_Store
+
+android/keystore.properties
+android/app/profix-release.jks

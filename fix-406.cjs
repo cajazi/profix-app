@@ -1,6 +1,0 @@
-﻿const fs = require('fs')
-let c = fs.readFileSync('src/main.js', 'utf8')
-c = c.replace(/\.select\("pin_hash"\)\.eq\("id", profileId\)\.single\(\)/g, '.select("pin_hash").eq("id", profileId).maybeSingle()')
-c = c.replace(/\.select\("pin_hash"\)\.eq\("id", user\.id\)\.single\(\)/g, '.select("pin_hash").eq("id", user.id).maybeSingle()')
-fs.writeFileSync('src/main.js', c, 'utf8')
-console.log('done')
