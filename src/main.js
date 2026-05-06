@@ -130,118 +130,326 @@ function calculateCommission(amount) {
   if (amt <= 1000000) return Math.round(amt * 0.025)
   return Math.round(amt * 0.015)
 }
-function getDeviceId() {
-  let id = localStorage.getItem("profix_device_id")
-  if (!id) {
-    id = crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36)
-    localStorage.setItem("profix_device_id", id)
-  }
-  return id
-}
+// ═══════════════════════════════════════════════════════════════
+// PROFIX AUTH ENGINE - Single source of truth
+// ═══════════════════════════════════════════════════════════════
+
+// ── CRYPTO HELPERS ────────────────────────────────────────────────
 async function sha256pin(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str))
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str + "profix_salt"))
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("")
 }
-async function isTrustedDevice(profile) {
-  const id = getDeviceId()
-  return (profile.trusted_devices || []).includes(id)
+
+// ── ACCOUNT STORAGE ───────────────────────────────────────────────
+// Single key: profix_accounts = [{email, profileId, pinHash, refreshToken, trusted, lastUsed}]
+
+function loadAccounts() {
+  try { return JSON.parse(localStorage.getItem("profix_accounts") || "[]") }
+  catch(e) { return [] }
 }
-async function trustDevice(userId) {
-  const id = getDeviceId()
-  // Save to Supabase
-  const { data: p } = await supabase.from("profiles").select("trusted_devices,email").eq("id", userId).single()
-  const devices = p?.trusted_devices || []
-  if (!devices.includes(id)) {
-    devices.push(id)
-    await supabase.from("profiles").update({ trusted_devices: devices }).eq("id", userId)
-  }
-  // Also save to localStorage for offline check
-  if (p?.email) {
-    localStorage.setItem("profix_profile_" + p.email, JSON.stringify({ profileId: userId, pinSet: true }))
-    const trustedEmails = JSON.parse(localStorage.getItem("profix_trusted_" + id) || "[]")
-    if (!trustedEmails.includes(p.email)) {
-      trustedEmails.push(p.email)
-      localStorage.setItem("profix_trusted_" + id, JSON.stringify(trustedEmails))
+
+function saveAccount(account) {
+  const accounts = loadAccounts().filter(a => a.email !== account.email)
+  accounts.push({ ...account, lastUsed: Date.now() })
+  localStorage.setItem("profix_accounts", JSON.stringify(accounts))
+}
+
+function getAccount(email) {
+  return loadAccounts().find(a => a.email === email) || null
+}
+
+function removeAccount(email) {
+  localStorage.setItem("profix_accounts", JSON.stringify(
+    loadAccounts().filter(a => a.email !== email)
+  ))
+}
+
+// ── SESSION RESTORE ────────────────────────────────────────────────
+async function restoreSession(account) {
+  if (!account?.refreshToken) return null
+  try {
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token: account.refreshToken })
+    if (error || !data?.session) return null
+    // Update token
+    saveAccount({ ...account, refreshToken: data.session.refresh_token, lastUsed: Date.now() })
+    return data.session
+  } catch(e) { return null }
+}
+
+// ── SOFT LOGOUT (no signOut - keeps tokens intact) ─────────────────
+function softLogout() {
+  currentUser = null
+  currentEmail = ""
+  backStack = []
+  sessionStorage.clear()
+  showAccountPicker()
+}
+
+// ── BIOMETRIC HELPERS ──────────────────────────────────────────────
+async function checkBiometricAvailable() {
+  try {
+    const { BiometricAuth } = await import("@aparajita/capacitor-biometric-auth")
+    const info = await BiometricAuth.checkBiometry()
+    return info.isAvailable
+  } catch(e) { return false }
+}
+
+async function authenticateWithBiometric(onSuccess, onFallback) {
+  try {
+    const { BiometricAuth } = await import("@aparajita/capacitor-biometric-auth")
+    await BiometricAuth.authenticate({
+      reason: "Verify your identity to access ProFix",
+      cancelTitle: "Use PIN instead",
+      androidTitle: "ProFix Biometric Login",
+      androidSubtitle: "Use your fingerprint or face to login",
+      androidConfirmationRequired: false,
+    })
+    onSuccess()
+  } catch(e) { onFallback() }
+}
+
+function isBiometricEnabled(userId) {
+  return localStorage.getItem("profix_biometric_" + userId) === "1"
+}
+
+async function saveBiometricPreference(userId, enabled) {
+  localStorage.setItem("profix_biometric_" + userId, enabled ? "1" : "0")
+}
+
+// ── ACCOUNT PICKER ─────────────────────────────────────────────────
+function showAccountPicker() {
+  const accounts = loadAccounts().sort((a,b) => (b.lastUsed||0) - (a.lastUsed||0))
+  if (!accounts.length) { showLogin(); return }
+
+  const btns = accounts.map(acc =>
+    "<button class='acc-btn' data-email='" + acc.email + "' style='width:100%;display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;cursor:pointer;margin-bottom:10px;text-align:left;box-shadow:var(--shadow-sm);'>" +
+      "<div style='width:44px;height:44px;background:#00C259;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;flex-shrink:0;'>" + acc.email[0].toUpperCase() + "</div>" +
+      "<div style='flex:1;min-width:0;'>" +
+        "<p style='color:var(--text-primary);font-size:14px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + acc.email + "</p>" +
+        "<p style='color:var(--text-muted);font-size:12px;margin:2px 0 0;'>Tap to unlock</p>" +
+      "</div>" +
+      "<span style='color:var(--text-muted);font-size:22px;'>&#8250;</span>" +
+    "</button>"
+  ).join("")
+
+  app.innerHTML =
+    "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
+    "<div style='text-align:center;margin-bottom:32px;'>" +
+      "<div style='display:inline-flex;align-items:center;justify-content:center;width:76px;height:76px;background:#00C259;border-radius:22px;margin-bottom:14px;box-shadow:var(--shadow-green);'><span style='font-size:34px;'>&#128295;</span></div>" +
+      "<h1 style='color:#fff;font-size:28px;font-weight:800;margin:0;'>ProFix</h1>" +
+      "<p style='color:var(--text-secondary);font-size:14px;margin:4px 0 0;'>Choose your account</p>" +
+    "</div>" +
+    "<div style='width:100%;max-width:400px;'>" +
+      btns +
+      "<button id='addAccountBtn' style='width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:transparent;color:var(--primary);font-size:15px;font-weight:600;border:2px dashed var(--primary);border-radius:16px;cursor:pointer;margin-top:4px;'>&#43; Use another account</button>" +
+    "</div></div>"
+
+  document.querySelectorAll(".acc-btn").forEach(btn => {
+    btn.addEventListener("click", () => showPinUnlock(btn.dataset.email))
+  })
+  document.getElementById("addAccountBtn").addEventListener("click", () => showLogin())
+}
+
+// ── PIN UNLOCK ─────────────────────────────────────────────────────
+function showPinUnlock(email) {
+  pushScreen("pinUnlock", () => showPinUnlock(email))
+  currentEmail = email
+  const initial = email[0].toUpperCase()
+
+  app.innerHTML =
+    "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
+    "<div style='width:100%;max-width:400px;background:var(--bg-card);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
+      "<div style='text-align:center;margin-bottom:22px;'>" +
+        "<div style='width:56px;height:56px;background:#00C259;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;'><span style='color:#fff;font-size:22px;font-weight:700;'>" + initial + "</span></div>" +
+        "<h2 style='color:var(--text-primary);font-size:20px;font-weight:700;margin:0 0 4px;'>Enter your PIN</h2>" +
+        "<p style='color:var(--text-secondary);font-size:13px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + email + "</p>" +
+      "</div>" +
+      "<div style='position:relative;width:100%;'>" +
+        "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
+        "<button id='eyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#129351;</button>" +
+      "</div>" +
+      "<div id='bioWrap' style='text-align:center;margin:14px 0 4px;display:none;'>" +
+        "<button id='bioBtn' type='button' style='background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 auto;padding:8px;'>" +
+          "<span style='font-size:44px;line-height:1;'>&#129351;</span>" +
+          "<span style='color:var(--text-muted);font-size:12px;'>Use Fingerprint</span>" +
+        "</button>" +
+      "</div>" +
+      "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
+      "<button id='unlockBtn' style='width:100%;margin-top:16px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;min-height:50px;'>Unlock</button>" +
+      "<button id='switchBtn' style='width:100%;margin-top:10px;padding:12px;background:none;color:var(--primary);font-size:14px;font-weight:600;border:none;cursor:pointer;'>Switch account</button>" +
+      "<button id='forgotBtn' style='width:100%;margin-top:4px;padding:10px;background:none;color:var(--text-muted);font-size:13px;border:none;cursor:pointer;'>Forgot PIN? Use email code</button>" +
+    "</div></div>"
+
+  const inp = document.getElementById("pinInput")
+  inp.focus()
+  inp.addEventListener("input", () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
+  inp.addEventListener("keydown", e => { if (e.key==="Enter") document.getElementById("unlockBtn").click() })
+
+  document.getElementById("eyeBtn").addEventListener("click", function() {
+    inp.type = inp.type === "password" ? "tel" : "password"
+    this.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
+  })
+
+  // Biometric
+  checkBiometricAvailable().then(av => {
+    if (av) {
+      const acc = getAccount(email)
+      if (acc && isBiometricEnabled(acc.profileId)) {
+        document.getElementById("bioWrap").style.display = "block"
+        document.getElementById("bioBtn").addEventListener("click", () => {
+          authenticateWithBiometric(
+            () => _finalizeUnlock(email),
+            () => inp.focus()
+          )
+        })
+      }
     }
+  })
+
+  document.getElementById("switchBtn").addEventListener("click", () => showAccountPicker())
+
+  document.getElementById("forgotBtn").addEventListener("click", async () => {
+    const fb = document.getElementById("forgotBtn")
+    fb.disabled = true; fb.textContent = "Sending code..."
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
+    if (!error) { currentEmail = email; showOTP("existing") }
+    else { fb.disabled = false; fb.textContent = "Forgot PIN? Use email code" }
+  })
+
+  document.getElementById("unlockBtn").addEventListener("click", async () => {
+    const val = inp.value.trim()
+    hideErr("pinErr")
+    if (val.length < 6) { showErr("pinErr", "PIN must be 6 digits"); return }
+    setBtn("unlockBtn", true, "Verifying...")
+
+    const account = getAccount(email)
+    let pinHash = account?.pinHash
+
+    if (!pinHash) {
+      // Fallback to server verification
+      try {
+        const { data: prof } = await supabase.from("profiles").select("id,pin_hash").eq("email", email).single()
+        if (!prof?.pin_hash) { showErr("pinErr", "PIN not set. Use email code."); setBtn("unlockBtn", false, "Unlock"); return }
+        const h = await sha256pin(val)
+        if (h !== prof.pin_hash) { inp.value = ""; showErr("pinErr", "Incorrect PIN. Try again."); setBtn("unlockBtn", false, "Unlock"); return }
+        // Save for future
+        saveAccount({ ...(account||{}), email, profileId: prof.id, pinHash: prof.pin_hash, trusted: true })
+      } catch(e) { showErr("pinErr", "Connection error."); setBtn("unlockBtn", false, "Unlock"); return }
+    } else {
+      const h = await sha256pin(val)
+      if (h !== pinHash) { inp.value = ""; showErr("pinErr", "Incorrect PIN. Try again."); setBtn("unlockBtn", false, "Unlock"); return }
+    }
+
+    await _finalizeUnlock(email)
+    setBtn("unlockBtn", false, "Unlock")
+  })
+}
+
+async function _finalizeUnlock(email) {
+  const account = getAccount(email)
+
+  // 1. Check existing session
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user?.email === email) {
+      currentUser = session.user
+      currentEmail = email
+      saveAccount({ ...account, email, refreshToken: session.refresh_token || account?.refreshToken, lastUsed: Date.now() })
+      showDashboard(session.user)
+      return
+    }
+  } catch(e) {}
+
+  // 2. Restore with refresh token
+  if (account?.refreshToken) {
+    const session = await restoreSession(account)
+    if (session?.user?.email === email) {
+      currentUser = session.user
+      currentEmail = email
+      showDashboard(session.user)
+      return
+    }
+  }
+
+  // 3. Silent OTP fallback
+  const errEl = document.getElementById("pinErr")
+  if (errEl) { errEl.textContent = "Verifying identity..."; errEl.style.display = "block" }
+  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
+  if (!error) {
+    currentEmail = email
+    setTimeout(() => showOTP("existing"), 800)
+  } else {
+    if (errEl) { errEl.textContent = "Connection error. Try again."; errEl.style.display = "block" }
+    const ub = document.getElementById("unlockBtn")
+    if (ub) { ub.disabled = false; ub.textContent = "Unlock" }
   }
 }
 
-// â”€â”€ LOGIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── SIGN IN (new device / new user) ───────────────────────────────
 function showLogin() {
   backStack = []; isGoingBack = false
   pushScreen("login", showLogin)
   app.innerHTML =
     "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
     "<div style='text-align:center;margin-bottom:28px;'>" +
-      "<div style='display:inline-flex;align-items:center;justify-content:center;width:76px;height:76px;background:#00C259;border-radius:22px;margin-bottom:14px;box-shadow:var(--shadow-green);'>" +
-        "<span style='font-size:34px;'>&#128295;</span>" +
-      "</div>" +
+      "<div style='display:inline-flex;align-items:center;justify-content:center;width:76px;height:76px;background:#00C259;border-radius:22px;margin-bottom:14px;box-shadow:var(--shadow-green);'><span style='font-size:34px;'>&#128295;</span></div>" +
       "<h1 style='color:#fff;font-size:34px;font-weight:800;margin:0;letter-spacing:-1px;'>ProFix</h1>" +
       "<p style='color:var(--text-secondary);font-size:14px;margin:4px 0 0;'>Home services marketplace</p>" +
     "</div>" +
     "<div style='width:100%;max-width:400px;background:var(--bg-card);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
-      "<h2 style='color:var(--text-primary);font-size:22px;font-weight:700;margin:0 0 4px;'>Welcome back</h2>" +
-      "<p style='color:var(--text-secondary);font-size:14px;margin:0 0 22px;'>Sign in to your ProFix account</p>" +
+      "<h2 style='color:var(--text-primary);font-size:22px;font-weight:700;margin:0 0 4px;'>Sign in</h2>" +
+      "<p style='color:var(--text-secondary);font-size:14px;margin:0 0 22px;'>Enter your email to continue</p>" +
       "<label style='display:block;color:var(--text-primary);font-size:13px;font-weight:600;margin-bottom:7px;'>Email address</label>" +
       "<input id='emailInput' type='email' inputmode='email' autocomplete='email' placeholder='you@example.com' style='width:100%;padding:13px 15px;border-radius:12px;border:2px solid var(--border);color:var(--text-primary);background:var(--bg-input);font-size:16px;outline:none;box-sizing:border-box;' />" +
       "<p id='loginErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
       "<button id='continueBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;min-height:50px;'>Continue</button>" +
-      "<div style='display:flex;align-items:center;gap:12px;margin:20px 0;'>" +
-        "<div style='flex:1;height:1px;background:var(--border);'></div>" +
-        "<span style='color:var(--text-muted);font-size:12px;font-weight:500;'>NEW TO PROFIX?</span>" +
-        "<div style='flex:1;height:1px;background:var(--border);'></div>" +
-      "</div>" +
+      "<div style='display:flex;align-items:center;gap:12px;margin:20px 0;'><div style='flex:1;height:1px;background:var(--border);'></div><span style='color:var(--text-muted);font-size:12px;font-weight:500;'>NEW TO PROFIX?</span><div style='flex:1;height:1px;background:var(--border);'></div></div>" +
       "<button id='createAccountBtn' style='width:100%;padding:14px;background:transparent;color:var(--primary);font-size:16px;font-weight:700;border:2px solid var(--primary);border-radius:12px;cursor:pointer;min-height:50px;'>Create Account</button>" +
     "</div></div>"
 
-  const btn   = document.getElementById("continueBtn")
+  const btn = document.getElementById("continueBtn")
   const input = document.getElementById("emailInput")
   input.focus()
-  input.addEventListener("keydown", e => { if (e.key === "Enter") btn.click() })
+  input.addEventListener("keydown", e => { if (e.key==="Enter") btn.click() })
   document.getElementById("createAccountBtn").addEventListener("click", () => showRoleSelect())
 
   btn.addEventListener("click", async () => {
     const email = input.value.trim().toLowerCase()
     hideErr("loginErr")
-    if (!email) { showErr("loginErr", "Please enter your email address"); return }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email) { showErr("loginErr","Please enter your email"); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr("loginErr","Please enter a valid email"); return }
 
     setBtn("continueBtn", true, "Checking...")
 
-    // ── STEP 1: DEVICE RECOGNITION ──────────────────────────────
-    const deviceId     = getDeviceId()
-    const savedProfile = JSON.parse(localStorage.getItem("profix_profile_" + email) || "null")
-    const trustedList  = JSON.parse(localStorage.getItem("profix_trusted_" + deviceId) || "[]")
-
-    if (savedProfile && savedProfile.profileId && savedProfile.pinSet && trustedList.includes(email)) {
+    // Check if local account exists → go to PIN
+    const localAccount = getAccount(email)
+    if (localAccount?.pinHash) {
       currentEmail = email
       setBtn("continueBtn", false, "Continue")
-      showPinLogin(email, savedProfile.profileId)
+      showPinUnlock(email)
       return
     }
 
-    // ── STEP 2: CHECK IF ACCOUNT EXISTS ─────────────────────
-    let emailExists = false
+    // Check if account exists on server
     try {
-      const _r = await fetch("https://kufcdoexwufttxhsxhui.supabase.co/functions/v1/check-email", {
+      const res = await fetch("https://kufcdoexwufttxhsxhui.supabase.co/functions/v1/check-email", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + import.meta.env.VITE_SUPABASE_ANON_KEY },
         body: JSON.stringify({ email })
       })
-      const _d = await _r.json()
-      emailExists = _d.exists === true
-    } catch(fetchErr) {
+      const d = await res.json()
+      if (!d.exists) {
+        setBtn("continueBtn", false, "Continue")
+        showErr("loginErr", "No account found. Please create an account.")
+        return
+      }
+    } catch(e) {
       setBtn("continueBtn", false, "Continue")
-      showErr("loginErr", "Connection error. Please try again.")
-      return
-    }
-    if (!emailExists) {
-      setBtn("continueBtn", false, "Continue")
-      showErr("loginErr", "No account found with this email. Please create an account.")
+      showErr("loginErr", "Connection error. Try again.")
       return
     }
 
-    // ── STEP 3: SEND OTP ─────────────────────────────────────────
+    // Send OTP
     setBtn("continueBtn", true, "Sending code...")
     const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
     if (error) { setBtn("continueBtn", false, "Continue"); showErr("loginErr", error.message); return }
@@ -251,47 +459,32 @@ function showLogin() {
   })
 }
 
-// ── ROLE SELECTION (Create Account) ──────────────────────────────
+// ── ROLE SELECTION ─────────────────────────────────────────────────
 function showRoleSelect() {
   pushScreen("roleSelect", () => showRoleSelect())
   app.innerHTML =
     "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
     "<div style='text-align:center;margin-bottom:32px;'>" +
-      "<div style='display:inline-flex;align-items:center;justify-content:center;width:76px;height:76px;background:#00C259;border-radius:22px;margin-bottom:14px;box-shadow:var(--shadow-green);'>" +
-        "<span style='font-size:34px;'>&#128295;</span>" +
-      "</div>" +
+      "<div style='display:inline-flex;align-items:center;justify-content:center;width:76px;height:76px;background:#00C259;border-radius:22px;margin-bottom:14px;box-shadow:var(--shadow-green);'><span style='font-size:34px;'>&#128295;</span></div>" +
       "<h1 style='color:#fff;font-size:28px;font-weight:800;margin:0;'>Join ProFix</h1>" +
       "<p style='color:var(--text-secondary);font-size:14px;margin:6px 0 0;'>How do you want to use ProFix?</p>" +
     "</div>" +
     "<div style='width:100%;max-width:400px;'>" +
       "<button id='roleOwnerBtn' style='width:100%;background:var(--bg-card);border:2px solid var(--border);border-radius:20px;padding:22px;margin-bottom:14px;cursor:pointer;text-align:left;box-shadow:var(--shadow-sm);'>" +
         "<div style='display:flex;align-items:center;gap:16px;'>" +
-          "<div style='width:56px;height:56px;background:rgba(0,194,89,0.10);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(0,194,89,0.25);'>" +
-            "<span style='font-size:28px;'>&#127968;</span>" +
-          "</div>" +
-          "<div style='flex:1;'>" +
-            "<p style='color:var(--text-primary);font-size:17px;font-weight:700;margin:0 0 4px;'>I need services</p>" +
-            "<p style='color:var(--text-secondary);font-size:13px;margin:0;'>Post jobs, hire verified professionals</p>" +
-          "</div>" +
-          "<span style='color:var(--primary);font-size:26px;font-weight:300;'>&#8250;</span>" +
+          "<div style='width:56px;height:56px;background:rgba(0,194,89,0.10);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(0,194,89,0.25);'><span style='font-size:28px;'>&#127968;</span></div>" +
+          "<div style='flex:1;'><p style='color:var(--text-primary);font-size:17px;font-weight:700;margin:0 0 4px;'>I need services</p><p style='color:var(--text-secondary);font-size:13px;margin:0;'>Post jobs, hire verified professionals</p></div>" +
+          "<span style='color:var(--primary);font-size:26px;'>&#8250;</span>" +
         "</div>" +
       "</button>" +
       "<button id='roleWorkerBtn' style='width:100%;background:var(--bg-card);border:2px solid var(--border);border-radius:20px;padding:22px;margin-bottom:28px;cursor:pointer;text-align:left;box-shadow:var(--shadow-sm);'>" +
         "<div style='display:flex;align-items:center;gap:16px;'>" +
-          "<div style='width:56px;height:56px;background:rgba(59,130,246,0.10);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(59,130,246,0.2);'>" +
-            "<span style='font-size:28px;'>&#128296;</span>" +
-          "</div>" +
-          "<div style='flex:1;'>" +
-            "<p style='color:var(--text-primary);font-size:17px;font-weight:700;margin:0 0 4px;'>I offer services</p>" +
-            "<p style='color:var(--text-secondary);font-size:13px;margin:0;'>Find jobs, earn money with your skills</p>" +
-          "</div>" +
-          "<span style='color:var(--primary);font-size:26px;font-weight:300;'>&#8250;</span>" +
+          "<div style='width:56px;height:56px;background:rgba(59,130,246,0.10);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(59,130,246,0.2);'><span style='font-size:28px;'>&#128296;</span></div>" +
+          "<div style='flex:1;'><p style='color:var(--text-primary);font-size:17px;font-weight:700;margin:0 0 4px;'>I offer services</p><p style='color:var(--text-secondary);font-size:13px;margin:0;'>Find jobs, earn money with your skills</p></div>" +
+          "<span style='color:var(--primary);font-size:26px;'>&#8250;</span>" +
         "</div>" +
       "</button>" +
-      "<p style='text-align:center;color:var(--text-secondary);font-size:14px;'>" +
-        "Already have an account? " +
-        "<span id='signInLink' style='color:var(--primary);font-weight:600;cursor:pointer;'>Sign in</span>" +
-      "</p>" +
+      "<p style='text-align:center;color:var(--text-secondary);font-size:14px;'>Already have an account? <span id='signInLink' style='color:var(--primary);font-weight:600;cursor:pointer;'>Sign in</span></p>" +
     "</div></div>"
 
   document.getElementById("signInLink").addEventListener("click", () => popScreen())
@@ -299,6 +492,7 @@ function showRoleSelect() {
   document.getElementById("roleWorkerBtn").addEventListener("click", () => showRegister("worker"))
 }
 
+// ── REGISTER ───────────────────────────────────────────────────────
 function showRegister(role) {
   pushScreen("register", () => showRegister(role))
   const roleLabel = role === "owner" ? "Home Owner" : "Service Professional"
@@ -310,9 +504,7 @@ function showRegister(role) {
     "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
     "<div style='width:100%;max-width:400px;background:var(--bg-card);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
       "<div style='text-align:center;margin-bottom:22px;'>" +
-        "<div style='width:72px;height:72px;background:" + roleBg + ";border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;border:2px solid " + roleBorder + ";'>" +
-          "<span style='font-size:32px;'>" + roleIcon + "</span>" +
-        "</div>" +
+        "<div style='width:72px;height:72px;background:" + roleBg + ";border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;border:2px solid " + roleBorder + ";'><span style='font-size:32px;'>" + roleIcon + "</span></div>" +
         "<h2 style='color:var(--text-primary);font-size:22px;font-weight:700;margin:0 0 6px;'>Create Account</h2>" +
         "<p style='color:var(--text-secondary);font-size:13px;margin:0;'>Joining as <strong style='color:var(--primary);'>" + roleLabel + "</strong></p>" +
       "</div>" +
@@ -325,26 +517,16 @@ function showRegister(role) {
 
   const regInput = document.getElementById("regEmail")
   regInput.focus()
-
   document.getElementById("regBackBtn").addEventListener("click", () => popScreen())
-
   document.getElementById("regBtn").addEventListener("click", async () => {
     const email = regInput.value.trim().toLowerCase()
     const errEl = document.getElementById("regErr")
     errEl.style.display = "none"
     if (!email) { errEl.textContent = "Please enter your email"; errEl.style.display = "block"; return }
-
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = "Please enter a valid email"; errEl.style.display = "block"; return }
     setBtn("regBtn", true, "Checking...")
-
-    // Check if email already has an account
     const { data: existing } = await supabase.from("profiles").select("id").eq("email", email).maybeSingle()
-    if (existing) {
-      setBtn("regBtn", false, "Get Started")
-      errEl.textContent = "An account with this email already exists. Please sign in."
-      errEl.style.display = "block"
-      return
-    }
-
+    if (existing) { setBtn("regBtn", false, "Get Started"); errEl.textContent = "Account already exists. Please sign in."; errEl.style.display = "block"; return }
     setBtn("regBtn", true, "Sending code...")
     const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
     if (error) { setBtn("regBtn", false, "Get Started"); errEl.textContent = error.message; errEl.style.display = "block"; return }
@@ -355,8 +537,7 @@ function showRegister(role) {
   })
 }
 
-
-// â”€â”€ OTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── OTP VERIFICATION ───────────────────────────────────────────────
 function showOTP(mode) {
   pushScreen("otp", () => showOTP(mode))
   app.innerHTML =
@@ -373,45 +554,67 @@ function showOTP(mode) {
       "<button id='resendBtn' style='width:100%;margin-top:10px;padding:10px;background:none;color:var(--primary);font-size:14px;font-weight:600;border:none;cursor:pointer;'>Resend code</button>" +
     "</div></div>"
 
-  const verifyBtn = document.getElementById("verifyBtn")
-  const otpInput  = document.getElementById("otpInput")
+  const otpInput = document.getElementById("otpInput")
   otpInput.focus()
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
-  otpInput.addEventListener("input",   () => { otpInput.value = otpInput.value.replace(/\D/g,"").slice(0,6) })
-  otpInput.addEventListener("keydown", e => { if (e.key==="Enter") verifyBtn.click() })
+  otpInput.addEventListener("input", () => { otpInput.value = otpInput.value.replace(/\D/g,"").slice(0,6) })
+  otpInput.addEventListener("keydown", e => { if (e.key==="Enter") document.getElementById("verifyBtn").click() })
+
   document.getElementById("resendBtn").addEventListener("click", async () => {
     const rb = document.getElementById("resendBtn")
     rb.disabled = true; rb.textContent = "Sending..."
-    await supabase.auth.signInWithOtp({ email: currentEmail, options: { shouldCreateUser: true } })
-    let secs = 30
-    const tick = setInterval(() => { rb.textContent = "Resend in "+secs+"s"; secs--; if(secs<0){clearInterval(tick);rb.disabled=false;rb.textContent="Resend code"} }, 1000)
+    await supabase.auth.signInWithOtp({ email: currentEmail, options: { shouldCreateUser: mode === "new" } })
+    let s = 30
+    const t = setInterval(() => { rb.textContent = "Resend in "+s+"s"; s--; if(s<0){clearInterval(t);rb.disabled=false;rb.textContent="Resend code"} }, 1000)
   })
-  verifyBtn.addEventListener("click", async () => {
+
+  document.getElementById("verifyBtn").addEventListener("click", async () => {
     const token = otpInput.value.trim()
     hideErr("otpErr")
-    if (!token||token.length<6) { showErr("otpErr","Please enter the full 6-digit code"); return }
-    setBtn("verifyBtn", true, "Verify Code")
+    if (!token||token.length<6) { showErr("otpErr","Please enter the 6-digit code"); return }
+    setBtn("verifyBtn", true, "Verifying...")
     const { data, error } = await supabase.auth.verifyOtp({ email: currentEmail, token, type: "email" })
     if (error) { setBtn("verifyBtn", false, "Verify Code"); showErr("otpErr","Incorrect code. Try again."); return }
     currentUser = data?.user
+
+    // Save refresh token immediately
+    if (data?.session?.refresh_token && currentUser?.email) {
+      const existing = getAccount(currentUser.email) || {}
+      saveAccount({ ...existing, email: currentUser.email, profileId: currentUser.id, refreshToken: data.session.refresh_token, trusted: true })
+    }
+
+    // Upsert profile with role
     if (currentUser) {
       const regRole = sessionStorage.getItem("profix_reg_role") || "owner"
       sessionStorage.removeItem("profix_reg_role")
       await supabase.from("profiles").upsert({ id: currentUser.id, email: currentUser.email, role: regRole }, { onConflict: "id" })
     }
+
     const { data: freshProfile } = await supabase.from("profiles").select("pin_hash,pin_set").eq("id", currentUser.id).single()
+    // Save refresh token regardless
+    if (data?.session?.refresh_token) {
+      const _acc = getAccount(currentUser.email) || {}
+      saveAccount({ ..._acc, email: currentUser.email, profileId: currentUser.id, refreshToken: data.session.refresh_token, trusted: true })
+    }
     if (freshProfile?.pin_hash) {
-      showVerifyPin(currentUser, true)
+      // Existing user with PIN - save hash and go to dashboard
+      const _acc2 = getAccount(currentUser.email) || {}
+      saveAccount({ ..._acc2, email: currentUser.email, profileId: currentUser.id, pinHash: freshProfile.pin_hash, refreshToken: data?.session?.refresh_token || _acc2.refreshToken, trusted: true })
+      currentUser = currentUser
+      currentEmail = currentUser.email
+      showDashboard(currentUser)
     } else {
-      showCreatePin(currentUser)
+      // New user - create PIN
+      showCreatePin(currentUser, data.session)
     }
   })
 }
 
-// â”€â”€ CREATE PIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function showCreatePin(user) {
-  pushScreen("createPin", () => showCreatePin(user))
+// ── CREATE PIN ─────────────────────────────────────────────────────
+function showCreatePin(user, session) {
+  pushScreen("createPin", () => showCreatePin(user, session))
   let pin1 = "", step = 1
+
   app.innerHTML =
     "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
     "<div style='width:100%;max-width:400px;background:var(--bg-card);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
@@ -420,36 +623,21 @@ function showCreatePin(user) {
         "<p id='pinSub' style='color:var(--text-secondary);font-size:14px;margin:0;'>Protects your account on this device</p>" +
       "</div>" +
       "<div style='position:relative;width:100%;'>" +
-      "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#129351;</button>" +
-      "</div>" +
-      "<div style='text-align:center;margin:16px 0 4px;'>" +
-        "<button id='biometricBtn' type='button' style='background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 auto;padding:8px;'>" +
-          "<span style='font-size:48px;line-height:1;'>&#129351;</span>" +
-          "<span style='color:var(--text-muted);font-size:12px;font-weight:500;'>Use Fingerprint</span>" +
-        "</button>" +
+        "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
+        "<button id='eyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#129351;</button>" +
       "</div>" +
       "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
-      "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Next</button>" +
+      "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;min-height:50px;'>Next</button>" +
     "</div></div>"
+
   const inp = document.getElementById("pinInput")
   inp.focus()
   inp.addEventListener("input", () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
-  var _eye = document.getElementById("pinEyeBtn")
-  if (_eye) _eye.addEventListener("click", function() {
-    inp.type = inp.type === "password" ? "tel" : "password"
-    _eye.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
+  document.getElementById("eyeBtn").addEventListener("click", function() {
+    inp.type = inp.type==="password"?"tel":"password"
+    this.innerHTML = inp.type==="password"?"&#128065;":"&#128683;"
   })
-  var _bioBtn = document.getElementById("biometricBtn")
-  if (_bioBtn) {
-    checkBiometricAvailable().then(function(av) { if (!av) _bioBtn.style.display = "none" })
-    _bioBtn.addEventListener("click", async function() {
-      await authenticateWithBiometric(
-        function() { showDashboard(currentUser) },
-        function() { inp.focus() }
-      )
-    })
-  }
+
   document.getElementById("pinBtn").addEventListener("click", async () => {
     const val = inp.value.trim()
     hideErr("pinErr")
@@ -462,200 +650,31 @@ function showCreatePin(user) {
       step = 2; inp.focus()
     } else {
       if (val !== pin1) { showErr("pinErr","PINs do not match"); inp.value = ""; return }
-      setBtn("pinBtn", true, "Create PIN")
+      setBtn("pinBtn", true, "Saving...")
       const hash = await sha256pin(val)
       const { error: pinErr } = await supabase.from("profiles").update({ pin_hash: hash, pin_set: true }).eq("id", user.id)
-      if (pinErr) { showErr("pinErr","Failed to save PIN: "+pinErr.message); setBtn("pinBtn",false,"Create PIN"); return }
-      // Save hash locally for offline PIN check
-      localStorage.setItem("profix_hash_" + user.email, hash)
-      const { data: { session: s } } = await supabase.auth.getSession()
-      if (s?.refresh_token) localStorage.setItem("profix_rt_" + user.email, s.refresh_token)
-      await trustDevice(user.id)
-      sessionStorage.setItem("profix_pin_ok","1")
+      if (pinErr) { showErr("pinErr","Failed: "+pinErr.message); setBtn("pinBtn",false,"Create PIN"); return }
+      // Save to centralized accounts
+      const rt = session?.refresh_token || localStorage.getItem("profix_rt_" + user.email) || ""
+      saveAccount({ email: user.email, profileId: user.id, pinHash: hash, refreshToken: rt, trusted: true })
       currentUser = user
+      currentEmail = user.email
       showDashboard(user)
     }
   })
 }
 
-// â”€â”€ VERIFY PIN (existing user, new device) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function showVerifyPin(user, trustAfter) {
-  pushScreen("verifyPin", () => showVerifyPin(user, trustAfter))
-  let attempts = 0
-  app.innerHTML =
-    "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
-    "<div style='width:100%;max-width:400px;background:var(--bg-card);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
-      "<div style='text-align:center;margin-bottom:22px;'><span style='font-size:40px;'>&#128274;</span>" +
-        "<h2 style='color:var(--text-primary);font-size:21px;font-weight:700;margin:12px 0 8px;'>Enter your PIN</h2>" +
-        "<p style='color:var(--text-secondary);font-size:14px;margin:0;'>" + (user?.email||currentEmail) + "</p>" +
-      "</div>" +
-      "<div style='position:relative;width:100%;'>" +
-      "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#129351;</button>" +
-      "</div>" +
-      "<div style='text-align:center;margin:16px 0 4px;'>" +
-        "<button id='biometricBtn' type='button' style='background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 auto;padding:8px;'>" +
-          "<span style='font-size:48px;line-height:1;'>&#129351;</span>" +
-          "<span style='color:var(--text-muted);font-size:12px;font-weight:500;'>Use Fingerprint</span>" +
-        "</button>" +
-      "</div>" +
-      "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
-      "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
-      "<button id='forgotBtn' style='width:100%;margin-top:10px;padding:10px;background:none;color:var(--text-secondary);font-size:13px;border:none;cursor:pointer;'>Forgot PIN? Use email code</button>" +
-    "</div></div>"
-  const inp = document.getElementById("pinInput")
-  inp.focus()
-  inp.addEventListener("input",   () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
-  var _eye = document.getElementById("pinEyeBtn")
-  if (_eye) _eye.addEventListener("click", function() {
-    inp.type = inp.type === "password" ? "tel" : "password"
-    _eye.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
-  })
-  var _bioBtn = document.getElementById("biometricBtn")
-  if (_bioBtn) {
-    checkBiometricAvailable().then(function(av) { if (!av) _bioBtn.style.display = "none" })
-    _bioBtn.addEventListener("click", async function() {
-      await authenticateWithBiometric(
-        function() { showDashboard(currentUser) },
-        function() { inp.focus() }
-      )
-    })
+// ── VERIFY PIN (after OTP for existing user) ───────────────────────
+function showCreatePinAfterOTP(user, session) {
+  // Existing user just verified OTP - save token and go to dashboard
+  if (session?.refresh_token) {
+    const existing = getAccount(user.email) || {}
+    saveAccount({ ...existing, email: user.email, profileId: user.id, refreshToken: session.refresh_token, trusted: true })
   }
-  inp.addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("pinBtn").click() })
-  document.getElementById("pinBtn").addEventListener("click", async () => {
-    const val = inp.value.trim()
-    hideErr("pinErr")
-    if (val.length < 6) { showErr("pinErr","Enter your 6-digit PIN"); return }
-    setBtn("pinBtn", true, "Unlock")
-    let { data: profile } = await supabase.from("profiles").select("pin_hash").eq("id", user.id).maybeSingle()
-    if (!profile?.pin_hash) { showCreatePin(user); return }
-    const hash = await sha256pin(val)
-    if (hash !== profile.pin_hash) {
-      attempts++; setBtn("pinBtn", false, "Unlock"); inp.value = ""
-      showErr("pinErr", attempts >= 3 ? "Too many attempts. Use email code." : "Wrong PIN. Try again.")
-      if (attempts >= 5) { await supabase.auth.signOut(); showLogin() }
-      return
-    }
-    // Save hash locally for future offline PIN check
-    localStorage.setItem("profix_hash_" + user.email, profile.pin_hash)
-    const { data: { session: s2 } } = await supabase.auth.getSession()
-    if (s2?.refresh_token) localStorage.setItem("profix_rt_" + user.email, s2.refresh_token)
-    if (trustAfter) await trustDevice(user.id)
-    sessionStorage.setItem("profix_pin_ok","1")
-    currentUser = user; showDashboard(user)
-  })
-  document.getElementById("forgotBtn").addEventListener("click", async () => {
-    const em = user?.email || currentEmail
-    localStorage.removeItem("profix_rt_" + em)
-    localStorage.removeItem("profix_hash_" + em)
-    localStorage.removeItem("profix_profile_" + em)
-    const deviceId = getDeviceId()
-    const trustedEmails = JSON.parse(localStorage.getItem("profix_trusted_" + deviceId) || "[]")
-    const filtered = trustedEmails.filter(e => e !== em)
-    localStorage.setItem("profix_trusted_" + deviceId, JSON.stringify(filtered))
-    await supabase.auth.signOut()
-    currentEmail = em
-    const { error } = await supabase.auth.signInWithOtp({ email: em, options: { shouldCreateUser: false } })
-    if (!error) showOTP("existing"); else showLogin()
-  })
-}
-
-// â”€â”€ PIN LOGIN (trusted device) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async function showPinLogin(email, profileId) {
-  pushScreen("pinLogin", () => showPinLogin(email, profileId))
-  // Check if account is locked
-  const { data: lockCheck } = await supabase.from("profiles").select("pin_attempts,pin_locked_until").eq("id", profileId).single()
-  if (lockCheck && lockCheck.pin_locked_until) {
-    const lockedUntil = new Date(lockCheck.pin_locked_until)
-    if (lockedUntil > new Date()) {
-      const mins = Math.ceil((lockedUntil - new Date()) / 60000)
-      app.innerHTML = "<div style='min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'><div style='width:100%;max-width:380px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:24px;padding:36px 24px;text-align:center;'><span style='font-size:52px;'>&#128274;</span><h2 style='color:var(--danger);font-size:20px;font-weight:700;margin:16px 0 8px;'>Account Locked</h2><p style='color:var(--text-secondary);font-size:14px;margin:0 0 20px;'>Too many wrong attempts. Try again in " + mins + " minute" + (mins===1?"":"s") + ".</p><button id='useEmailBtn' style='width:100%;padding:14px;background:var(--primary);color:#FFFFFF;font-size:15px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Use Email Code Instead</button></div></div>"
-      document.getElementById("useEmailBtn").addEventListener("click", () => { popScreen(); showLogin() })
-      return
-    }
-  }
-  let attempts = 0
-  app.innerHTML =
-    "<div style='min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;background:var(--bg-page);'>" +
-    "<div style='width:100%;max-width:400px;background:var(--bg-card);border-radius:24px;padding:28px;box-shadow:var(--shadow-modal);'>" +
-      "<div style='text-align:center;margin-bottom:22px;'><span style='font-size:40px;'>&#128075;</span>" +
-        "<h2 style='color:var(--text-primary);font-size:21px;font-weight:700;margin:12px 0 8px;'>Welcome back</h2>" +
-        "<p style='color:var(--text-secondary);font-size:14px;margin:0;'>" + email + "</p>" +
-      "</div>" +
-      "<div style='position:relative;width:100%;'>" +
-      "<input id='pinInput' type='password' inputmode='numeric' maxlength='6' placeholder='------' style='width:100%;padding:15px 52px 15px 15px;border-radius:12px;border:2px solid #e5e7eb;color:var(--text-primary);background:var(--bg-input);font-size:26px;text-align:center;letter-spacing:10px;font-family:monospace;outline:none;box-sizing:border-box;' />" +
-      "<button id='pinEyeBtn' type='button' style='position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);padding:0;'>&#129351;</button>" +
-      "</div>" +
-      "<div style='text-align:center;margin:16px 0 4px;'>" +
-        "<button id='biometricBtn' type='button' style='background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 auto;padding:8px;'>" +
-          "<span style='font-size:48px;line-height:1;'>&#129351;</span>" +
-          "<span style='color:var(--text-muted);font-size:12px;font-weight:500;'>Use Fingerprint</span>" +
-        "</button>" +
-      "</div>" +
-      "<p id='pinErr' style='color:#ef4444;font-size:13px;margin:7px 0 0;display:none;'></p>" +
-      "<button id='pinBtn' style='width:100%;margin-top:18px;padding:14px;background:#00C259;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;cursor:pointer;'>Unlock</button>" +
-      "<button id='otpBtn' style='width:100%;margin-top:10px;padding:10px;background:none;color:var(--text-secondary);font-size:13px;border:none;cursor:pointer;'>Use email code instead</button>" +
-    "</div></div>"
-  const inp = document.getElementById("pinInput")
-  inp.focus()
-  inp.addEventListener("input",   () => { inp.value = inp.value.replace(/\D/g,"").slice(0,6) })
-  var _eye = document.getElementById("pinEyeBtn")
-  if (_eye) _eye.addEventListener("click", function() {
-    inp.type = inp.type === "password" ? "tel" : "password"
-    _eye.innerHTML = inp.type === "password" ? "&#128065;" : "&#128683;"
-  })
-  var _bioBtn = document.getElementById("biometricBtn")
-  if (_bioBtn) {
-    checkBiometricAvailable().then(function(av) { if (!av) _bioBtn.style.display = "none" })
-    _bioBtn.addEventListener("click", async function() {
-      await authenticateWithBiometric(
-        function() { showDashboard(currentUser) },
-        function() { inp.focus() }
-      )
-    })
-  }
-  inp.addEventListener("keydown", e => { if(e.key==="Enter") document.getElementById("pinBtn").click() })
-  document.getElementById("pinBtn").addEventListener("click", async () => {
-    const val = inp.value.trim()
-    hideErr("pinErr")
-    if (val.length < 6) { showErr("pinErr","Enter your 6-digit PIN"); return }
-    setBtn("pinBtn", true, "Unlock")
-    // Compare against locally stored hash (saved at PIN creation time)
-    const savedHash = localStorage.getItem("profix_hash_" + email)
-    if (!savedHash) {
-      showErr("pinErr","Session expired. Sending email code.")
-      setTimeout(async () => {
-        await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
-        showOTP("existing")
-      }, 1500)
-      return
-    }
-    const hash = await sha256pin(val)
-    if (hash !== savedHash) {
-      attempts++; setBtn("pinBtn", false, "Unlock"); inp.value = ""
-      showErr("pinErr", attempts >= 3 ? "Too many attempts. Use email code." : "Wrong PIN. Try again.")
-      if (attempts >= 5) showLogin()
-      return
-    }
-    // PIN correct - session is still alive (soft logout keeps it)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      sessionStorage.setItem("profix_pin_ok","1")
-      currentUser = session.user; currentEmail = session.user.email
-      showDashboard(session.user)
-    } else {
-      // Only reach here if user was away for days and token truly expired
-      showErr("pinErr","Session expired. Sending email code.")
-      setTimeout(async () => {
-        await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
-        showOTP("existing")
-      }, 1500)
-    }
-  })
-  document.getElementById("otpBtn").addEventListener("click", async () => {
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
-    if (!error) showOTP("existing"); else showLogin()
-  })
+  // They already have a PIN - just go to dashboard
+  currentUser = user
+  currentEmail = user.email
+  showDashboard(user)
 }
 
 function showDashboard(user) {
@@ -826,18 +845,18 @@ function showDashboard(user) {
   })()
   document.getElementById("menuSignOutBtn").addEventListener("click", async () => {
     closeMenu()
-    await supabase.auth.signOut()
+    const rememberedEmail = currentEmail
     sessionStorage.clear()
-    // Keep profix_device_id, profix_profile_*, profix_trusted_* for device recognition
-    // Only clear auth session data
-    if (currentEmail) {
-      localStorage.removeItem("profix_hash_" + currentEmail)
-      localStorage.removeItem("profix_rt_" + currentEmail)
-    }
-    currentEmail = ""
     currentUser = null
+    currentEmail = ""
     backStack = []
-    showLogin()
+    if (rememberedEmail) {
+      localStorage.setItem("profix_last_email", rememberedEmail)
+      const savedProfile = JSON.parse(localStorage.getItem("profix_profile_" + rememberedEmail) || "null")
+      showPinUnlock(rememberedEmail, savedProfile?.profileId || null)
+    } else {
+      showLogin()
+    }
   })
   document.getElementById("notifBtn").addEventListener("click", () => showNotifications(user))
   // Load escrow total from active contracts
@@ -1321,7 +1340,6 @@ function renderProfileView(user, profile, container) {
 
   document.getElementById("editProfileBtn").addEventListener("click", () => renderProfileEdit(user, profile, container))
   if (document.getElementById("startKycBtn")) document.getElementById("startKycBtn").addEventListener("click", () => showKYC(user))
-  document.getElementById("profileSignOutBtn").addEventListener("click", async () => { sessionStorage.removeItem("profix_pin_ok"); currentEmail = ""; currentUser = null; showLogin() })
 }
 
 function renderProfileEdit(user, profile, container) {
@@ -3009,42 +3027,6 @@ function showVerifyWithdrawalPin(user, storedPin, onSuccess) {
 }
 
 // â”€â”€ PRIVACY POLICY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async function checkBiometricAvailable() {
-  try {
-    const info = await BiometricAuth.checkBiometry()
-    return info.isAvailable
-  } catch(e) {
-    return false
-  }
-}
-
-async function authenticateWithBiometric(onSuccess, onFallback) {
-  try {
-    await BiometricAuth.authenticate({
-      reason: "Verify your identity to access ProFix",
-      cancelTitle: "Use PIN instead",
-      allowDeviceCredential: false,
-      iosFallbackTitle: "Use PIN",
-      androidTitle: "ProFix Biometric Login",
-      androidSubtitle: "Use your fingerprint or face to login",
-      androidConfirmationRequired: false,
-    })
-    onSuccess()
-  } catch(e) {
-    // User cancelled or biometric failed - fallback to PIN
-    onFallback()
-  }
-}
-
-async function saveBiometricPreference(userId, enabled) {
-  localStorage.setItem("profix_biometric_" + userId, enabled ? "1" : "0")
-}
-
-function isBiometricEnabled(userId) {
-  return localStorage.getItem("profix_biometric_" + userId) === "1"
-}
-
-// ── PRIVACY POLICY ───────────────────────────────────────────────
 function showPrivacyPolicy() {
   pushScreen("privacy", () => showPrivacyPolicy())
   function legalSection(title, body) {
@@ -3063,8 +3045,8 @@ function showPrivacyPolicy() {
       legalSection("3. Data Sharing", "We share data with Paystack for payment processing only. We do NOT sell your data. We may share with Nigerian regulatory authorities if required by law.") +
       legalSection("4. Data Retention", "Account data retained for 7 years (CBN requirement). KYC documents retained for 5 years. You may request deletion subject to legal requirements.") +
       legalSection("5. Security", "All data encrypted in transit using TLS. PINs hashed using bcrypt. KYC documents stored in encrypted cloud storage.") +
-      legalSection("6. Your Rights", "Access, correct, or request deletion of your data by contacting support@profix.ng") +
-      legalSection("7. Contact", "ProFix Support | Email: support@profix.ng | Nigeria") +
+      legalSection("6. Your Rights", "Access, correct, or request deletion of your data by contacting support@cosmas.dev") +
+      legalSection("7. Contact", "ProFix Support | Email: support@cosmas.dev | Nigeria") +
     "</div></div>"
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
 }
@@ -3091,7 +3073,7 @@ function showTermsOfService() {
       legalSection("6. Dispute Resolution", "Disputes must be raised within 24 hours of job completion. ProFix admin decisions are final.") +
       legalSection("7. Limitation of Liability", "ProFix is not liable for losses from user disputes, network failures, or third-party payment issues.") +
       legalSection("8. Termination", "ProFix reserves the right to suspend accounts that violate these terms without prior notice.") +
-      legalSection("9. Contact", "ProFix Support | Email: support@profix.ng | Nigeria") +
+      legalSection("9. Contact", "ProFix Support | Email: support@cosmas.dev | Nigeria") +
     "</div></div>"
   document.getElementById("backBtn").addEventListener("click", () => popScreen())
 }
@@ -3275,40 +3257,31 @@ function showChangeLoginPin(user) {
   render("New Login PIN", "Enter a new 6-digit PIN", "Next")
 }
 
+
+
 async function boot() {
   initTheme()
   setupAndroidBack()
   showLoading()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (session?.user) {
-    currentEmail = session.user.email
-    currentUser  = session.user
-    const savedHash = localStorage.getItem("profix_hash_" + session.user.email)
-    if (savedHash) {
-      const biometricEnabled = isBiometricEnabled(session.user.id)
-      const biometricAvailable = await checkBiometricAvailable()
-      if (biometricEnabled && biometricAvailable) {
-        await authenticateWithBiometric(
-          () => showDashboard(session.user),
-          () => showVerifyPin(session.user, false)
-        )
-      } else {
-        showVerifyPin(session.user, false)
-      }
+  try {
+    const accounts = loadAccounts()
+    if (accounts.length > 0) {
+      showAccountPicker()
     } else {
-      showDashboard(session.user)
+      showLogin()
     }
-  } else {
-    // No session - clear any stale data
-    Object.keys(localStorage).forEach(function(key) {
-      if (key.startsWith("profix_")) localStorage.removeItem(key)
-    })
-    sessionStorage.clear()
+  } catch(err) {
     showLogin()
   }
 }
-
 boot()
+
+
+
+
+
+
+
 
 
 
